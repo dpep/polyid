@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    MY_NEW_GEM (0.0.0)
+    polyid (0.0.0)
 
 GEM
   remote: https://rubygems.org/
@@ -56,8 +56,8 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  MY_NEW_GEM!
   debug (>= 1)
+  polyid!
   rspec (>= 3.10)
   rspec-debugging
   simplecov (>= 0.22)
