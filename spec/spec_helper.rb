@@ -1,3 +1,4 @@
+require "active_record"
 require "debug"
 require "rspec"
 require "rspec/debugging"
