@@ -1,3 +1,5 @@
+require "active_record"
+
 # Configure ActiveRecord to use SQLite in-memory database
 ActiveRecord::Base.establish_connection(
   adapter: 'sqlite3',

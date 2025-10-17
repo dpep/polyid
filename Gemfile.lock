@@ -38,6 +38,10 @@ GEM
     docile (1.4.0)
     drb (2.2.3)
     erb (5.0.1)
+    factory_bot (6.5.4)
+      activesupport (>= 6.1.0)
+    faker (3.5.2)
+      i18n (>= 1.8.11, < 2)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
     io-console (0.8.0)
@@ -93,8 +97,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  activerecord (>= 7.0)
+  activerecord (>= 7)
   debug (>= 1)
+  factory_bot (>= 6)
+  faker (>= 3)
   polyid!
   rspec (>= 3.10)
   rspec-debugging

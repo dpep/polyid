@@ -1,5 +1,5 @@
-require "active_record"
 require "debug"
+require "faker"
 require "rspec"
 require "rspec/debugging"
 require "simplecov"
@@ -25,6 +25,10 @@ RSpec.configure do |config|
     # verify existence of stubbed methods
     mocks.verify_partial_doubles = true
   end
+
+  # filter gems from backtraces
+  config.filter_gems_from_backtrace("rspec")
+  config.filter_gems_from_backtrace("factory_bot")
 end
 
 Dir["./spec/support/**/*.rb"].sort.each { |f| require f }
