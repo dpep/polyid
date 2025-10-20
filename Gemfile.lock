@@ -38,7 +38,7 @@ GEM
     docile (1.4.0)
     drb (2.2.3)
     erb (5.0.1)
-    factory_bot (6.5.4)
+    factory_bot (6.5.5)
       activesupport (>= 6.1.0)
     faker (3.5.2)
       i18n (>= 1.8.11, < 2)
