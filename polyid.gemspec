@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.summary     = "PolyId"
   s.version     = "0.0.0"
 
-  s.required_ruby_version = ">= 3.2"
+  s.required_ruby_version = ">= 3.3"
 
   s.add_development_dependency 'activerecord', '>= 7'
   s.add_development_dependency 'debug', '>= 1'
