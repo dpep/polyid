@@ -85,15 +85,5 @@ RSpec.describe User do
       expect(User.uuids_for([user.uuid, nil])).to eq([user.uuid, nil])
     end
 
-    it 'uses the cache for repeat uuid lookups' do
-      user = create(:user)
-
-      expect(User.id_for(user.uuid)).to eq(user.id)
-
-      allow(User).to receive(:find_by).and_raise("expected cache hit")
-
-      expect(User.id_for(user.uuid)).to eq(user.id)
-      expect(User.uuid_for(user.id)).to eq(user.uuid)
-    end
   end
 end

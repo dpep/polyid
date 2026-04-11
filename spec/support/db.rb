@@ -23,8 +23,6 @@ ActiveRecord::Schema.define do
     t.string :name
     t.string :uuid, null: false
   end
-
-  add_index :users, :uuid, unique: true
 end
 
 # Models

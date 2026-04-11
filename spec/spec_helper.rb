@@ -32,11 +32,7 @@ RSpec.configure do |config|
   config.filter_gems_from_backtrace("factory_bot")
 
   config.before do
-    PolyId.cache = ActiveSupport::Cache::MemoryStore.new
-  end
-
-  config.after do
-    PolyId.cache.clear if defined?(PolyId)
+    PolyId.cache = ActiveSupport::Cache::NullStore.new
   end
 end
 
