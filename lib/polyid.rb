@@ -12,10 +12,25 @@ module PolyId
   UUID_PATTERN = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/i
 
   class << self
-    attr_writer :cache
+    attr_writer :cache, :cache_binary_uuids
 
     def cache
       @cache ||= ActiveSupport::Cache::MemoryStore.new
+    end
+
+    def reset
+      @cache&.clear if instance_variable_defined?(:@cache)
+
+      remove_instance_variable(:@cache) if instance_variable_defined?(:@cache)
+      remove_instance_variable(:@cache_binary_uuids) if instance_variable_defined?(:@cache_binary_uuids)
+    end
+
+    def cache_binary_uuids?
+      unless instance_variable_defined?(:@cache_binary_uuids)
+        @cache_binary_uuids = !!(defined?(Rails) && Rails.respond_to?(:env) && Rails.env.production?)
+      end
+      
+      @cache_binary_uuids
     end
 
     def is_uuid?(value)

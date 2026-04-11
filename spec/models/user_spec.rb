@@ -29,16 +29,20 @@ RSpec.describe User do
   end
 
   describe '.find' do
-    it 'finds records by integer id' do
-      user = create(:user)
+    subject(:found_user) { User.find(lookup) }
 
-      expect(User.find(user.id)).to eq(user)
+    context 'when looking up by integer id' do
+      let(:user) { create(:user) }
+      let(:lookup) { user.id }
+
+      it { is_expected.to eq(user) }
     end
 
-    it 'finds records by uuid' do
-      user = create(:user)
+    context 'when looking up by uuid' do
+      let(:user) { create(:user) }
+      let(:lookup) { user.uuid }
 
-      expect(User.find(user.uuid)).to eq(user)
+      it { is_expected.to eq(user) }
     end
 
     it 'finds multiple records by mixed ids and uuids' do
@@ -57,11 +61,26 @@ RSpec.describe User do
   end
 
   describe 'translation helpers' do
-    it 'translates a uuid to an id and back' do
-      user = create(:user)
+    let(:user) { create(:user) }
 
-      expect(User.id_for(user.uuid)).to eq(user.id)
-      expect(User.uuid_for(user.id)).to eq(user.uuid)
+    describe '.id_for' do
+      subject(:id_for) { User.id_for(lookup) }
+
+      context 'when looking up by uuid' do
+        let(:lookup) { user.uuid }
+
+        it { is_expected.to eq(user.id) }
+      end
+    end
+
+    describe '.uuid_for' do
+      subject(:uuid_for) { User.uuid_for(lookup) }
+
+      context 'when looking up by id' do
+        let(:lookup) { user.id }
+
+        it { is_expected.to eq(user.uuid) }
+      end
     end
 
     it 'translates multiple ids and uuids in order' do

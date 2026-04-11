@@ -34,6 +34,10 @@ RSpec.configure do |config|
   config.before do
     PolyId.cache = ActiveSupport::Cache::NullStore.new
   end
+
+  config.after do
+    PolyId.reset
+  end
 end
 
 Dir["./spec/support/**/*.rb"].sort.each { |f| require f }

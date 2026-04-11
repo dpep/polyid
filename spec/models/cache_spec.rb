@@ -10,6 +10,22 @@ RSpec.describe PolyId::Cache do
     PolyId.cache.clear
   end
 
+  describe 'binary uuid config' do
+    it 'defaults to enabled in Rails production' do
+      PolyId.remove_instance_variable(:@cache_binary_uuids) if PolyId.instance_variable_defined?(:@cache_binary_uuids)
+      stub_const("Rails", double(env: double(production?: true)))
+
+      expect(PolyId.cache_binary_uuids?).to be true
+    end
+
+    it 'allows explicit false to override the Rails production default' do
+      stub_const("Rails", double(env: double(production?: true)))
+      PolyId.cache_binary_uuids = false
+
+      expect(PolyId.cache_binary_uuids?).to be false
+    end
+  end
+
   describe '.fetch_ids' do
     it 'does not invoke the miss block when all uuids are cached' do
       user = create(:user)
@@ -195,6 +211,22 @@ RSpec.describe PolyId::Cache do
       expect(User.uuid_for(user.id)).to be_nil
 
       expect(cache).to be_empty
+    end
+
+    it 'can encode uuids as binary in cache while returning string uuids' do
+      PolyId.cache_binary_uuids = true
+      user = create(:user)
+      cache.clear
+
+      User.uuid_for(user.id)
+
+      raw_uuid_entry = cache.instance_variable_get(:@data).values
+        .map { |entry| entry.instance_variable_get(:@value) }
+        .find { |value| value.is_a?(String) && value.bytesize == 16 }
+
+      expect(raw_uuid_entry).not_to be_nil
+      expect(User.uuid_for(user.id)).to eq(user.uuid)
+      expect(User.id_for(user.uuid)).to eq(user.id)
     end
   end
 end

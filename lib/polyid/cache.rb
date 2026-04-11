@@ -2,22 +2,23 @@ module PolyId
   module Cache
     class << self
       def read(model_name, id: nil, uuid: nil)
-        PolyId.cache.read(key(model_name, id: id, uuid: uuid))
+        value = PolyId.cache.read(id.nil? ? uuid_key(model_name, uuid) : id_key(model_name, id))
+
+        id.nil? ? value : decode_uuid(value)
       end
 
       def read_multi(model_name, ids: [], uuids: [])
-        keys = ids.map { |id| key(model_name, id: id) } +
-          uuids.map { |uuid| key(model_name, uuid: uuid) }
+        id_keys = ids.to_h { |id| [id, id_key(model_name, id)] }
+        uuid_keys = uuids.to_h { |uuid| [uuid, uuid_key(model_name, uuid)] }
+        keys = id_keys.values + uuid_keys.values
 
         cached = PolyId.cache.read_multi(*keys)
 
         {
-          ids: ids.each_with_object({}) do |id, values|
-            cache_key = key(model_name, id: id)
-            values[id] = cached[cache_key] if cached.key?(cache_key)
+          ids: id_keys.each_with_object({}) do |(id, cache_key), values|
+            values[id] = decode_uuid(cached[cache_key]) if cached.key?(cache_key)
           end,
-          uuids: uuids.each_with_object({}) do |uuid, values|
-            cache_key = key(model_name, uuid: uuid)
+          uuids: uuid_keys.each_with_object({}) do |(uuid, cache_key), values|
             values[uuid] = cached[cache_key] if cached.key?(cache_key)
           end,
         }
@@ -48,9 +49,11 @@ module PolyId
       end
 
       def write(model_name, id:, uuid:)
+        encoded_uuid = encode_uuid(uuid)
+
         PolyId.cache.write_multi(
-          key(model_name, id: id) => uuid,
-          key(model_name, uuid: uuid) => id,
+          id_key(model_name, id) => encoded_uuid,
+          uuid_key(model_name, uuid, encoded_uuid) => id,
         )
       end
 
@@ -59,20 +62,39 @@ module PolyId
       end
 
       def delete_multi(model_name, ids: [], uuids: [])
-        keys = ids.map { |id| key(model_name, id: id) } +
-          uuids.map { |uuid| key(model_name, uuid: uuid) }
+        keys = ids.map { |id| id_key(model_name, id) } +
+          uuids.map { |uuid| uuid_key(model_name, uuid) }
 
         PolyId.cache.delete_multi(keys)
       end
 
       private
 
-      def key(model_name, id: nil, uuid: nil)
-        raise ArgumentError, "id or uuid required" if id.nil? && uuid.nil?
-
-        locator = id.nil? ? "uuid:#{uuid}" : "id:#{id}"
-        "polyid/#{model_name}/#{locator}"
+      def id_key(model_name, id)
+        "polyid/#{model_name}/id:#{id}"
       end
+
+      def uuid_key(model_name, uuid, encoded_uuid = nil)
+        encoded_uuid ||= encode_uuid(uuid)
+        "polyid/#{model_name}/uuid:#{encoded_uuid}"
+      end
+
+      def encode_uuid(uuid)
+        return uuid unless PolyId.cache_binary_uuids?
+
+        hex = uuid.dup
+        hex.delete!("-")
+        [hex].pack("H*")
+      end
+
+      def decode_uuid(uuid)
+        return uuid unless PolyId.cache_binary_uuids?
+        return uuid unless uuid.is_a?(String) && uuid.bytesize == 16
+
+        uuid.unpack("H8H4H4H4H12").join("-")
+      end
+
+      private :id_key, :uuid_key, :encode_uuid, :decode_uuid
     end
   end
 end
