@@ -1,4 +1,5 @@
 require "active_record"
+require "securerandom"
 
 # Configure ActiveRecord to use SQLite in-memory database
 ActiveRecord::Base.establish_connection(
@@ -20,9 +21,13 @@ end
 ActiveRecord::Schema.define do
   create_table :users, force: true do |t|
     t.string :name
+    t.string :uuid, null: false
   end
+
+  add_index :users, :uuid, unique: true
 end
 
 # Models
 class User < ActiveRecord::Base
+  polyid
 end

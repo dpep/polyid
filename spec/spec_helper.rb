@@ -3,6 +3,7 @@ require "faker"
 require "rspec"
 require "rspec/debugging"
 require "simplecov"
+require "active_support/cache"
 
 SimpleCov.start do
   add_filter "/spec/"
@@ -29,6 +30,14 @@ RSpec.configure do |config|
   # filter gems from backtraces
   config.filter_gems_from_backtrace("rspec")
   config.filter_gems_from_backtrace("factory_bot")
+
+  config.before do
+    PolyId.cache = ActiveSupport::Cache::MemoryStore.new
+  end
+
+  config.after do
+    PolyId.cache.clear if defined?(PolyId)
+  end
 end
 
 Dir["./spec/support/**/*.rb"].sort.each { |f| require f }
