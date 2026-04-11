@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.license     = "MIT"
   s.name        = File.basename(__FILE__, ".gemspec")
   s.summary     = "PolyId"
-  s.version     = "0.0.0"
+  s.version     = "0.1.0"
 
   s.required_ruby_version = ">= 3.3"
 
