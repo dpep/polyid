@@ -17,6 +17,7 @@ module PolyId
       def polyid(uuid_attribute: :uuid, uuid_generator: nil)
         self.polyid_uuid_attribute = uuid_attribute.to_s
         self.polyid_uuid_generator = uuid_generator
+        attribute(polyid_uuid_attribute, polyid_uuid_type) if polyid_binary_uuid?
       end
 
       def find(*ids)
@@ -84,7 +85,15 @@ module PolyId
       private
 
       def polyid_generate_uuid
-        PolyId.generate_uuid(polyid_uuid_generator)
+        PolyId.generate_uuid(polyid_uuid_generator || PolyId.uuid_generator)
+      end
+
+      def polyid_binary_uuid?
+        columns_hash[polyid_uuid_attribute]&.type == :binary
+      end
+
+      def polyid_uuid_type
+        @polyid_uuid_type ||= PolyId::BinaryUuidType.new
       end
 
       def resolve_polyids(values)

@@ -26,7 +26,7 @@ ActiveRecord::Schema.define do
 
   create_table :accounts, force: true do |t|
     t.string :name
-    t.string :uuid
+    t.binary :uuid, limit: 16
   end
 
   create_table :widgets, force: true do |t|

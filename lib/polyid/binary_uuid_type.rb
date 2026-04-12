@@ -1,0 +1,46 @@
+module PolyId
+  class BinaryUuidType < ActiveModel::Type::Binary
+    def cast(value)
+      return if value.nil?
+
+      if binary_uuid_bytes?(value)
+        deserialize(value)
+      else
+        normalize_uuid(value)
+      end
+    end
+
+    def serialize(value)
+      return if value.nil?
+
+      bytes = binary_uuid_bytes?(value) ? value : pack_uuid(normalize_uuid(value))
+      super(bytes)
+    end
+
+    def deserialize(value)
+      return if value.nil?
+
+      bytes = value.is_a?(Data) ? value.to_s : value
+      return bytes unless binary_uuid_bytes?(bytes)
+
+      bytes.unpack("H8H4H4H4H12").join("-")
+    end
+
+    private
+
+    def normalize_uuid(value)
+      uuid = value.to_s
+      raise ArgumentError, "invalid uuid: #{value.inspect}" unless PolyId.is_uuid?(uuid)
+
+      uuid
+    end
+
+    def pack_uuid(uuid)
+      [uuid.delete("-")].pack("H*")
+    end
+
+    def binary_uuid_bytes?(value)
+      value.is_a?(String) && value.bytesize == 16
+    end
+  end
+end
