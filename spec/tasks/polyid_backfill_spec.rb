@@ -21,14 +21,14 @@ RSpec.describe "polyid:backfill" do
   end
 
   it "backfills missing uuids for a model" do
+    existing_uuid = SecureRandom.uuid
     missing_account = Account.create!(name: "Missing UUID")
-    existing_account = Account.create!(name: "Existing UUID", uuid: SecureRandom.uuid)
+    existing_account = Account.create!(name: "Existing UUID", uuid: existing_uuid)
 
     task.invoke("Account")
 
-    expect(missing_account.reload.uuid).to be_present
-    expect(PolyId.is_uuid?(missing_account.uuid)).to be true
-    expect(existing_account.reload.uuid).to be_present
+    expect(missing_account.reload.uuid).to be_a_uuid
+    expect(existing_account.reload.uuid).to eq existing_uuid
   end
 
   it "preserves existing uuids while backfilling missing ones" do
@@ -38,7 +38,7 @@ RSpec.describe "polyid:backfill" do
 
     task.invoke("Account", "uuid", "1")
 
-    expect(missing_account.reload.uuid).to be_present
-    expect(existing_account.reload.uuid).to eq(existing_uuid)
+    expect(missing_account.reload.uuid).to be_a_uuid
+    expect(existing_account.reload.uuid).to eq existing_uuid
   end
 end

@@ -2,6 +2,7 @@ require "debug"
 require "faker"
 require "rspec"
 require "rspec/debugging"
+require "rspec/uuid"
 require "simplecov"
 require "active_support/cache"
 

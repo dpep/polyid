@@ -7,8 +7,7 @@ RSpec.describe "polyid rollout" do
         let(:initial_uuid) { nil }
 
         it "assigns a uuid on create" do
-          expect(user.uuid).to be_present
-          expect(PolyId.is_uuid?(user.uuid)).to be true
+          expect(user.uuid).to be_a_uuid
         end
       end
 
