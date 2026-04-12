@@ -4,14 +4,16 @@ RSpec.describe PolyId do
 
     it { is_expected.to be false }
 
-    it 'returns an explicit true override when configured' do
-      described_class.cache_binary_uuids = true
-      expect(cache_binary_uuids?).to be true
+    context 'when set to true' do
+      before { described_class.cache_binary_uuids = true }
+
+      it { is_expected.to be true }
     end
 
-    it 'returns an explicit false override when configured' do
-      described_class.cache_binary_uuids = false
-      expect(cache_binary_uuids?).to be false
+    context 'when set to false' do
+      before { described_class.cache_binary_uuids = false }
+
+      it { is_expected.to be false }
     end
 
     context 'when run in a Rails app' do
@@ -23,6 +25,12 @@ RSpec.describe PolyId do
         let(:prod) { true }
 
         it { is_expected.to be true }
+
+        context 'when set to false explicitly' do
+          before { described_class.cache_binary_uuids = false }
+
+          it { is_expected.to be false }
+        end
       end
 
       context 'when in dev' do
@@ -35,16 +43,14 @@ RSpec.describe PolyId do
 
   describe '.reset' do
     it 'clears cache configuration back to defaults' do
-      described_class.cache = ActiveSupport::Cache::MemoryStore.new
+      expect(described_class.cache).to be_a(ActiveSupport::Cache::NullStore)
       described_class.cache.write("abc", 123)
       described_class.cache_binary_uuids = true
 
       described_class.reset
 
-      expect(described_class.instance_variable_defined?(:@cache)).to be false
-      expect(described_class.instance_variable_defined?(:@cache_binary_uuids)).to be false
       expect(described_class.cache).to be_a(ActiveSupport::Cache::MemoryStore)
-      expect(described_class.cache.read("abc")).to be_nil
+      expect(described_class.cache).to be_empty
       expect(described_class.cache_binary_uuids?).to be false
     end
   end

@@ -3,7 +3,7 @@ module PolyId
     extend ActiveSupport::Concern
 
     included do
-      class_attribute :polyid_uuid_attribute, instance_writer: false, default: nil
+      class_attribute :polyid_uuid_attribute, instance_writer: false
 
       after_find :polyid_warm_cache
       after_save :polyid_refresh_cache

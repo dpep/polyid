@@ -71,19 +71,19 @@ module PolyId
       private
 
       def id_key(model_name, id)
-        "polyid/#{model_name}/id:#{id}"
+        "polyid/#{model_name}/#{id}"
       end
 
       def uuid_key(model_name, uuid, encoded_uuid = nil)
         encoded_uuid ||= encode_uuid(uuid)
-        "polyid/#{model_name}/uuid:#{encoded_uuid}"
+        prefix = PolyId.cache_binary_uuids? ? 'b' : 'uuid:'
+        "polyid/#{model_name}/#{prefix}#{encoded_uuid}"
       end
 
       def encode_uuid(uuid)
         return uuid unless PolyId.cache_binary_uuids?
 
-        hex = uuid.dup
-        hex.delete!("-")
+        hex = uuid.delete("-")
         [hex].pack("H*")
       end
 
@@ -93,8 +93,6 @@ module PolyId
 
         uuid.unpack("H8H4H4H4H12").join("-")
       end
-
-      private :id_key, :uuid_key, :encode_uuid, :decode_uuid
     end
   end
 end
