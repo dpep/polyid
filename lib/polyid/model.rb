@@ -4,7 +4,9 @@ module PolyId
 
     included do
       class_attribute :polyid_uuid_attribute, instance_writer: false
+      class_attribute :polyid_uuid_generator, instance_writer: false
 
+      before_validation :polyid_assign_uuid, on: :create
       validate :polyid_validate_uuid_immutable
       after_find :polyid_warm_cache
       after_save :polyid_warm_cache
@@ -12,8 +14,9 @@ module PolyId
     end
 
     class_methods do
-      def polyid(uuid_attribute: :uuid)
+      def polyid(uuid_attribute: :uuid, uuid_generator: nil)
         self.polyid_uuid_attribute = uuid_attribute.to_s
+        self.polyid_uuid_generator = uuid_generator
       end
 
       def find(*ids)
@@ -80,6 +83,10 @@ module PolyId
 
       private
 
+      def polyid_generate_uuid
+        PolyId.generate_uuid(polyid_uuid_generator)
+      end
+
       def resolve_polyids(values)
         uuids = values.select { |value| PolyId.is_uuid?(value) }
         cached_ids = PolyId::Cache.fetch_ids(name, uuids: uuids) do |missing_uuids|
@@ -95,6 +102,13 @@ module PolyId
     end
 
     private
+
+    def polyid_assign_uuid
+      return unless self.class.polyid?
+      return if public_send(self.class.polyid_uuid_attribute).present?
+
+      public_send("#{self.class.polyid_uuid_attribute}=", self.class.send(:polyid_generate_uuid))
+    end
 
     def polyid_warm_cache
       return unless self.class.polyid?

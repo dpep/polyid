@@ -14,6 +14,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'debug', '>= 1'
   s.add_development_dependency 'factory_bot', '>= 6'
   s.add_development_dependency 'faker', '>= 3'
+  s.add_development_dependency 'rake', '>= 13'
   s.add_development_dependency 'rspec', '>= 3.10'
   s.add_development_dependency 'rspec-debugging'
   s.add_development_dependency 'simplecov', '>= 0.22'

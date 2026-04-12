@@ -23,9 +23,27 @@ ActiveRecord::Schema.define do
     t.string :name
     t.string :uuid, null: false
   end
+
+  create_table :accounts, force: true do |t|
+    t.string :name
+    t.string :uuid
+  end
+
+  create_table :widgets, force: true do |t|
+    t.string :name
+    t.string :public_id
+  end
 end
 
 # Models
 class User < ActiveRecord::Base
   polyid
+end
+
+class Account < ActiveRecord::Base
+  polyid
+end
+
+class Widget < ActiveRecord::Base
+  polyid uuid_attribute: :public_id, uuid_generator: -> { "00000000-0000-7000-8000-000000000001" }
 end
