@@ -82,6 +82,12 @@ RSpec.describe User do
 
         it { is_expected.to eq(user.id) }
       end
+
+      context 'when looking up by id' do
+        let(:lookup) { user.id }
+
+        it { is_expected.to eq(user.id) }
+      end
     end
 
     describe '.uuid_for' do
@@ -89,6 +95,12 @@ RSpec.describe User do
 
       context 'when looking up by id' do
         let(:lookup) { user.id }
+
+        it { is_expected.to eq(user.uuid) }
+      end
+
+      context 'when looking up by uuid' do
+        let(:lookup) { user.uuid }
 
         it { is_expected.to eq(user.uuid) }
       end
@@ -114,6 +126,5 @@ RSpec.describe User do
       expect(User.ids_for([user.id, nil])).to eq([user.id, nil])
       expect(User.uuids_for([user.uuid, nil])).to eq([user.uuid, nil])
     end
-
   end
 end
