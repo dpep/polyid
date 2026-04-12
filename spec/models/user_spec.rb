@@ -21,6 +21,17 @@ RSpec.describe User do
       expect(user.reload.name).to eq('Bob Smith Jr.')
     end
 
+    it 'does not allow the uuid to change' do
+      user = create(:user)
+      original_uuid = user.uuid
+
+      expect {
+        user.update!(uuid: SecureRandom.uuid)
+      }.to raise_error(ActiveRecord::RecordInvalid, /Uuid is immutable/)
+
+      expect(user.reload.uuid).to eq(original_uuid)
+    end
+
     it 'deletes a user' do
       user = create(:user, name: 'Alice Jones')
       user.destroy

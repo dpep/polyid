@@ -10,33 +10,15 @@ RSpec.describe PolyId::Cache do
     PolyId.cache.clear
   end
 
-  describe 'binary uuid config' do
-    it 'defaults to enabled in Rails production' do
-      PolyId.remove_instance_variable(:@cache_binary_uuids) if PolyId.instance_variable_defined?(:@cache_binary_uuids)
-      stub_const("Rails", double(env: double(production?: true)))
-
-      expect(PolyId.cache_binary_uuids?).to be true
-    end
-
-    it 'allows explicit false to override the Rails production default' do
-      stub_const("Rails", double(env: double(production?: true)))
-      PolyId.cache_binary_uuids = false
-
-      expect(PolyId.cache_binary_uuids?).to be false
-    end
-  end
-
   describe '.fetch_ids' do
     it 'does not invoke the miss block when all uuids are cached' do
       user = create(:user)
 
       User.id_for(user.uuid)
 
-      expect {
-        described_class.fetch_ids(model_name, uuids: [user.uuid]) do
-          raise "unexpected cache miss"
-        end
-      }.not_to raise_error
+      expect { |block|
+        described_class.fetch_ids(model_name, uuids: [user.uuid], &block)
+      }.not_to yield_control
     end
 
     it 'invokes the miss block only for uncached uuids and merges the results' do
@@ -66,11 +48,9 @@ RSpec.describe PolyId::Cache do
 
       User.uuid_for(user.id)
 
-      expect {
-        described_class.fetch_uuids(model_name, ids: [user.id]) do
-          raise "unexpected cache miss"
-        end
-      }.not_to raise_error
+      expect { |block|
+        described_class.fetch_uuids(model_name, ids: [user.id], &block)
+      }.not_to yield_control
     end
 
     it 'invokes the miss block only for uncached ids and merges the results' do
@@ -133,6 +113,20 @@ RSpec.describe PolyId::Cache do
     end
   end
 
+  describe 'save cache warming' do
+    it 'writes both id and uuid entries when a record is saved' do
+      user = create(:user)
+      cache.clear
+
+      user.update!(name: "Updated Name")
+
+      expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(
+        ids: { user.id => user.uuid },
+        uuids: { user.uuid => user.id },
+      )
+    end
+  end
+
   describe 'translation cache' do
     it 'uses the cache for repeat uuid lookups' do
       user = create(:user)
@@ -183,18 +177,19 @@ RSpec.describe PolyId::Cache do
       expect(User.uuids_for([first.id, second.id])).to eq([first.uuid, second.uuid])
     end
 
-    it 'refreshes cached mappings when the uuid changes' do
+    it 'keeps cached mappings stable when a uuid update is rejected' do
       user = create(:user)
-      old_uuid = user.uuid
+      original_uuid = user.uuid
 
-      expect(User.id_for(old_uuid)).to eq(user.id)
-      expect(User.uuid_for(user.id)).to eq(old_uuid)
+      expect(User.id_for(original_uuid)).to eq(user.id)
+      expect(User.uuid_for(user.id)).to eq(original_uuid)
 
-      user.update!(uuid: SecureRandom.uuid)
+      expect {
+        user.update!(uuid: SecureRandom.uuid)
+      }.to raise_error(ActiveRecord::RecordInvalid, /Uuid is immutable/)
 
-      expect(User.id_for(old_uuid)).to be_nil
-      expect(User.id_for(user.uuid)).to eq(user.id)
-      expect(User.uuid_for(user.id)).to eq(user.uuid)
+      expect(User.id_for(original_uuid)).to eq(user.id)
+      expect(User.uuid_for(user.id)).to eq(original_uuid)
     end
 
     it 'evicts cached mappings when the record is destroyed' do

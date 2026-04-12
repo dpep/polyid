@@ -5,8 +5,9 @@ module PolyId
     included do
       class_attribute :polyid_uuid_attribute, instance_writer: false
 
+      validate :polyid_validate_uuid_immutable
       after_find :polyid_warm_cache
-      after_save :polyid_refresh_cache
+      after_save :polyid_warm_cache
       after_destroy :polyid_evict_cache
     end
 
@@ -101,20 +102,6 @@ module PolyId
       cache_polyid
     end
 
-    def polyid_refresh_cache
-      return unless self.class.polyid?
-
-      if previous_uuid = polyid_previous_uuid
-        PolyId::Cache.delete_multi(
-          self.class.name,
-          ids: [public_send(self.class.primary_key)],
-          uuids: [previous_uuid],
-        )
-      end
-
-      cache_polyid
-    end
-
     def polyid_evict_cache
       return unless self.class.polyid?
 
@@ -128,10 +115,11 @@ module PolyId
       )
     end
 
-    def polyid_previous_uuid
-      return unless saved_change_to_attribute?(self.class.polyid_uuid_attribute)
+    def polyid_validate_uuid_immutable
+      return unless persisted?
+      return unless will_save_change_to_attribute?(self.class.polyid_uuid_attribute)
 
-      attribute_before_last_save(self.class.polyid_uuid_attribute)
+      errors.add(self.class.polyid_uuid_attribute, "is immutable")
     end
 
     def cache_polyid
