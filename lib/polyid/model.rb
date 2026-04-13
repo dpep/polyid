@@ -17,17 +17,15 @@ module PolyId
       def polyid(uuid_attribute: :uuid, uuid_generator: nil)
         self.polyid_uuid_attribute = uuid_attribute.to_s
         self.polyid_uuid_generator = uuid_generator
-        attribute(polyid_uuid_attribute, polyid_uuid_type) if polyid_binary_uuid?
+        apply_polyid_uuid_type!
       end
 
       def find(*ids)
         return super unless polyid?
 
         if ids.length == 1 && ids.first.is_a?(Array)
-          # find([1, 2])
           super(resolve_polyids(ids.first))
         else
-          # find(1) or find(1, 2)
           super(*resolve_polyids(ids))
         end
       end
@@ -41,8 +39,8 @@ module PolyId
         uuids = values.select { |value| PolyId.is_uuid?(value) }
 
         resolved_uuids = PolyId::Cache.fetch_ids(name, uuids: uuids) do |missing_uuids|
-          where(polyid_uuid_attribute => missing_uuids).each_with_object({}) do |record, resolved|
-            resolved[record.public_send(polyid_uuid_attribute)] = record.public_send(primary_key)
+          where(polyid_uuid_attribute_name => missing_uuids).each_with_object({}) do |record, resolved|
+            resolved[record.public_send(polyid_uuid_attribute_name)] = record.public_send(primary_key)
           end
         end
 
@@ -65,7 +63,7 @@ module PolyId
 
         resolved_ids = PolyId::Cache.fetch_uuids(name, ids: ids) do |missing_ids|
           where(primary_key => missing_ids).each_with_object({}) do |record, resolved|
-            resolved[record.public_send(primary_key)] = record.public_send(polyid_uuid_attribute)
+            resolved[record.public_send(primary_key)] = record.public_send(polyid_uuid_attribute_name)
           end
         end
 
@@ -79,7 +77,7 @@ module PolyId
       end
 
       def polyid?
-        polyid_uuid_attribute.present?
+        polyid_uuid_attribute_name.present?
       end
 
       private
@@ -88,19 +86,51 @@ module PolyId
         PolyId.generate_uuid(polyid_uuid_generator || PolyId.uuid_generator)
       end
 
+      def polyid_uuid_attribute_name
+        return polyid_uuid_attribute if polyid_uuid_attribute.present?
+        return unless PolyId.auto_detect_models
+        return unless polyid_supports_auto_detection?
+
+        PolyId.default_uuid_attribute.to_s
+      end
+
+      def polyid_supports_auto_detection?
+        return false if abstract_class?
+        return false unless respond_to?(:table_exists?)
+        return false unless table_exists?
+
+        uuid_attribute = PolyId.default_uuid_attribute.to_s
+        column_names.include?("id") && column_names.include?(uuid_attribute)
+      rescue ActiveRecord::NoDatabaseError, ActiveRecord::StatementInvalid
+        false
+      end
+
       def polyid_binary_uuid?
-        columns_hash[polyid_uuid_attribute]&.type == :binary
+        uuid_attribute_name = polyid_uuid_attribute_name
+        return false if uuid_attribute_name.blank?
+
+        columns_hash[uuid_attribute_name]&.type == :binary
       end
 
       def polyid_uuid_type
         @polyid_uuid_type ||= PolyId::BinaryUuidType.new
       end
 
+      def apply_polyid_uuid_type!
+        return unless polyid_binary_uuid?
+        return if @polyid_uuid_type_applied == polyid_uuid_attribute_name
+
+        attribute(polyid_uuid_attribute_name, polyid_uuid_type)
+        @polyid_uuid_type_applied = polyid_uuid_attribute_name
+      end
+
       def resolve_polyids(values)
+        apply_polyid_uuid_type!
+
         uuids = values.select { |value| PolyId.is_uuid?(value) }
         cached_ids = PolyId::Cache.fetch_ids(name, uuids: uuids) do |missing_uuids|
-          where(polyid_uuid_attribute => missing_uuids).each_with_object({}) do |record, ids|
-            ids[record.public_send(polyid_uuid_attribute)] = record.public_send(primary_key)
+          where(polyid_uuid_attribute_name => missing_uuids).each_with_object({}) do |record, ids|
+            ids[record.public_send(polyid_uuid_attribute_name)] = record.public_send(primary_key)
           end
         end
 
@@ -114,9 +144,11 @@ module PolyId
 
     def polyid_assign_uuid
       return unless self.class.polyid?
-      return if public_send(self.class.polyid_uuid_attribute).present?
 
-      public_send("#{self.class.polyid_uuid_attribute}=", self.class.send(:polyid_generate_uuid))
+      uuid_attribute = self.class.send(:polyid_uuid_attribute_name)
+      return if public_send(uuid_attribute).present?
+
+      public_send("#{uuid_attribute}=", self.class.send(:polyid_generate_uuid))
     end
 
     def polyid_warm_cache
@@ -129,7 +161,7 @@ module PolyId
       return unless self.class.polyid?
 
       id = public_send(self.class.primary_key)
-      uuid = public_send(self.class.polyid_uuid_attribute)
+      uuid = public_send(self.class.send(:polyid_uuid_attribute_name))
 
       PolyId::Cache.delete_multi(
         self.class.name,
@@ -139,15 +171,16 @@ module PolyId
     end
 
     def polyid_validate_uuid_immutable
+      uuid_attribute = self.class.send(:polyid_uuid_attribute_name)
       return unless persisted?
-      return unless will_save_change_to_attribute?(self.class.polyid_uuid_attribute)
+      return unless will_save_change_to_attribute?(uuid_attribute)
 
-      errors.add(self.class.polyid_uuid_attribute, "is immutable")
+      errors.add(uuid_attribute, "is immutable")
     end
 
     def cache_polyid
       id = public_send(self.class.primary_key)
-      uuid = public_send(self.class.polyid_uuid_attribute)
+      uuid = public_send(self.class.send(:polyid_uuid_attribute_name))
       return if id.blank? || uuid.blank?
 
       PolyId::Cache.write(self.class.name, id: id, uuid: uuid)

@@ -15,7 +15,7 @@ module PolyId
   UUID_PATTERN = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/i
 
   class << self
-    attr_writer :cache, :cache_binary_uuids, :uuid_generator
+    attr_writer :cache, :cache_binary_uuids, :uuid_generator, :auto_detect_models, :default_uuid_attribute
 
     def cache
       @cache ||= ActiveSupport::Cache::MemoryStore.new
@@ -27,6 +27,8 @@ module PolyId
       remove_instance_variable(:@cache) if instance_variable_defined?(:@cache)
       remove_instance_variable(:@cache_binary_uuids) if instance_variable_defined?(:@cache_binary_uuids)
       remove_instance_variable(:@uuid_generator) if instance_variable_defined?(:@uuid_generator)
+      remove_instance_variable(:@auto_detect_models) if instance_variable_defined?(:@auto_detect_models)
+      remove_instance_variable(:@default_uuid_attribute) if instance_variable_defined?(:@default_uuid_attribute)
     end
 
     def cache_binary_uuids?
@@ -54,6 +56,16 @@ module PolyId
       else
         raise ArgumentError, "unsupported uuid generator: #{generator.inspect}"
       end
+    end
+
+    def auto_detect_models
+      return @auto_detect_models unless @auto_detect_models.nil?
+
+      true
+    end
+
+    def default_uuid_attribute
+      @default_uuid_attribute ||= "uuid"
     end
 
     def is_uuid?(value)

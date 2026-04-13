@@ -16,4 +16,9 @@ FactoryBot.define do
   factory :widget do
     name { Faker::Name.name }
   end
+
+  factory :auto_user do
+    name { Faker::Name.name }
+    uuid { SecureRandom.uuid }
+  end
 end

@@ -3,7 +3,7 @@ PolyId
 ![Gem](https://img.shields.io/gem/dt/polyid?style=plastic)
 [![codecov](https://codecov.io/gh/dpep/polyid/branch/main/graph/badge.svg)](https://codecov.io/gh/dpep/polyid)
 
-`polyid` adds an opt-in ActiveRecord integration for models that keep both an
+`polyid` adds an ActiveRecord integration for models that keep both an
 auto-incrementing primary key and a UUID column. It lets you look records up by
 either identifier and caches `id <=> uuid` translations for reuse.
 
@@ -13,6 +13,7 @@ either identifier and caches `id <=> uuid` translations for reuse.
 require "polyid"
 
 class User < ApplicationRecord
+  # optional when your model has both `id` and `uuid` columns
   polyid
 end
 
@@ -50,6 +51,22 @@ By default `polyid` uses the `uuid` column. You can point it at another column:
 class Account < ApplicationRecord
   polyid uuid_attribute: :public_id
 end
+```
+
+### Auto-detection
+
+By default, PolyId automatically enables translation helpers for models that
+have both `id` and `uuid` columns. If you prefer explicit model opt-in, disable
+auto-detection:
+
+```ruby
+PolyId.auto_detect_models = false
+```
+
+You can also change which UUID column name auto-detection checks:
+
+```ruby
+PolyId.default_uuid_attribute = :public_id
 ```
 
 The cache is warmed automatically when records are loaded and updated.
