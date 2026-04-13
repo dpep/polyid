@@ -1,14 +1,12 @@
 require "active_record"
 require "securerandom"
 
-# Configure ActiveRecord to use SQLite in-memory database
 ActiveRecord::Base.establish_connection(
-  adapter: 'sqlite3',
-  database: ':memory:'
+  adapter: "sqlite3",
+  database: ":memory:"
 )
 
 RSpec.configure do |config|
-  # Reset database between test runs
   config.around(:each) do |example|
     ActiveRecord::Base.connection.transaction do
       example.run
@@ -17,7 +15,6 @@ RSpec.configure do |config|
   end
 end
 
-# Schema
 ActiveRecord::Schema.define do
   create_table :users, force: true do |t|
     t.string :name
@@ -33,11 +30,13 @@ ActiveRecord::Schema.define do
     t.string :name
     t.string :public_id
   end
+
+  create_table :legacy_users, force: true do |t|
+    t.string :name
+  end
 end
 
-# Models
 class User < ActiveRecord::Base
-  polyid
 end
 
 class Account < ActiveRecord::Base
@@ -46,4 +45,7 @@ end
 
 class Widget < ActiveRecord::Base
   polyid uuid_attribute: :public_id, uuid_generator: -> { "00000000-0000-7000-8000-000000000001" }
+end
+
+class LegacyUser < ActiveRecord::Base
 end
