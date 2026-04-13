@@ -1,7 +1,7 @@
 RSpec.describe 'auto-detection' do
   def reset_polyid_auto_detection_state(model)
     model.remove_instance_variable(:@polyid_initialized) if model.instance_variable_defined?(:@polyid_initialized)
-    model.remove_instance_variable(:@polyid_resolved_uuid_attribute) if model.instance_variable_defined?(:@polyid_resolved_uuid_attribute)
+    model.remove_instance_variable(:@polyid_uuid_attribute) if model.instance_variable_defined?(:@polyid_uuid_attribute)
   end
 
   around do |example|
