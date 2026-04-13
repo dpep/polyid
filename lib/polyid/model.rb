@@ -77,6 +77,7 @@ module PolyId
       end
 
       def polyid?
+        polyid_apply_uuid_type!
         polyid_resolved_uuid_attribute.present?
       end
 

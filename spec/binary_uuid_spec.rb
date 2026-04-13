@@ -6,6 +6,11 @@ RSpec.describe Account do
       described_class.connection.select_value(described_class.where(id: account.id).select(:uuid).to_sql)
     end
 
+    it "auto-detects polyid and applies the binary uuid type" do
+      expect(described_class.polyid?).to be true
+      expect(described_class.type_for_attribute("uuid")).to be_a(PolyId::BinaryUuidType)
+    end
+
     it "assigns a uuid string while storing binary bytes" do
       expect(account.uuid).to be_a_uuid
       expect(raw_account_uuid).to be_a String

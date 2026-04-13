@@ -40,7 +40,6 @@ class User < ActiveRecord::Base
 end
 
 class Account < ActiveRecord::Base
-  polyid
 end
 
 class Widget < ActiveRecord::Base
