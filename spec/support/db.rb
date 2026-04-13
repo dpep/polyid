@@ -21,8 +21,6 @@ ActiveRecord::Schema.define do
     t.string :uuid, null: false
   end
 
-  add_index :users, :uuid, unique: true
-
   create_table :accounts, force: true do |t|
     t.string :name
     t.binary :uuid, limit: 16
@@ -33,20 +31,12 @@ ActiveRecord::Schema.define do
     t.string :public_id
   end
 
-  create_table :auto_users, force: true do |t|
-    t.string :name
-    t.string :uuid, null: false
-  end
-
-  add_index :auto_users, :uuid, unique: true
-
   create_table :legacy_users, force: true do |t|
     t.string :name
   end
 end
 
 class User < ActiveRecord::Base
-  polyid
 end
 
 class Account < ActiveRecord::Base
@@ -55,9 +45,6 @@ end
 
 class Widget < ActiveRecord::Base
   polyid uuid_attribute: :public_id, uuid_generator: -> { "00000000-0000-7000-8000-000000000001" }
-end
-
-class AutoUser < ActiveRecord::Base
 end
 
 class LegacyUser < ActiveRecord::Base

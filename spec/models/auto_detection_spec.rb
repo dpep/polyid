@@ -1,24 +1,32 @@
 RSpec.describe 'auto-detection' do
+  def reset_polyid_auto_detection_state(model)
+    model.remove_instance_variable(:@polyid_resolved_uuid_attribute) if model.instance_variable_defined?(:@polyid_resolved_uuid_attribute)
+  end
+
   around do |example|
-    previous_auto_detect = PolyId.auto_detect_models
+    previous_auto_detect = PolyId.auto_detect?
     previous_uuid_attribute = PolyId.default_uuid_attribute
 
-    PolyId.auto_detect_models = true
+    PolyId.auto_detect = true
     PolyId.default_uuid_attribute = :uuid
+    reset_polyid_auto_detection_state(User)
+    reset_polyid_auto_detection_state(LegacyUser)
 
     example.run
   ensure
-    PolyId.auto_detect_models = previous_auto_detect
+    PolyId.auto_detect = previous_auto_detect
     PolyId.default_uuid_attribute = previous_uuid_attribute
+    reset_polyid_auto_detection_state(User)
+    reset_polyid_auto_detection_state(LegacyUser)
   end
 
   it 'automatically enables polyid behavior for models with id and uuid columns' do
-    user = create(:auto_user)
+    user = create(:user)
 
-    expect(AutoUser.polyid?).to be(true)
-    expect(AutoUser.find(user.uuid)).to eq(user)
-    expect(AutoUser.id_for(user.uuid)).to eq(user.id)
-    expect(AutoUser.uuid_for(user.id)).to eq(user.uuid)
+    expect(User.polyid?).to be(true)
+    expect(User.find(user.uuid)).to eq(user)
+    expect(User.id_for(user.uuid)).to eq(user.id)
+    expect(User.uuid_for(user.id)).to eq(user.uuid)
   end
 
   it 'does not auto-enable models missing a uuid column' do
@@ -30,10 +38,10 @@ RSpec.describe 'auto-detection' do
   end
 
   it 'can disable auto-detection globally' do
-    PolyId.auto_detect_models = false
-    user = create(:auto_user)
+    PolyId.auto_detect = false
+    user = User.create!(name: 'User', uuid: SecureRandom.uuid)
 
-    expect(AutoUser.polyid?).to be(false)
-    expect { AutoUser.find(user.uuid) }.to raise_error(ActiveRecord::RecordNotFound)
+    expect(User.polyid?).to be(false)
+    expect { User.find(user.uuid) }.to raise_error(ActiveRecord::RecordNotFound)
   end
 end

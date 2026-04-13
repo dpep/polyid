@@ -60,7 +60,7 @@ have both `id` and `uuid` columns. If you prefer explicit model opt-in, disable
 auto-detection:
 
 ```ruby
-PolyId.auto_detect_models = false
+PolyId.auto_detect = false
 ```
 
 You can also change which UUID column name auto-detection checks:
