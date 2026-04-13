@@ -50,7 +50,7 @@ module PolyId
       when Proc
         generator.call
       when :v7, 7, "v7", "7"
-        SecureRandom.respond_to?(:uuid_v7) ? SecureRandom.uuid_v7 : SecureRandom.uuid
+        SecureRandom.uuid_v7
       when :v4, 4, "v4", "4"
         SecureRandom.uuid
       else
