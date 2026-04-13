@@ -17,7 +17,7 @@ module PolyId
       def polyid(uuid_attribute: PolyId.default_uuid_attribute, uuid_generator: nil)
         self.polyid_uuid_attribute = uuid_attribute.to_s
         self.polyid_uuid_generator = uuid_generator
-        polyid_apply_uuid_type!
+        polyid_initialize!
       end
 
       def find(*ids)
@@ -77,7 +77,7 @@ module PolyId
       end
 
       def polyid?
-        polyid_apply_uuid_type!
+        polyid_initialize!
         polyid_resolved_uuid_attribute.present?
       end
 
@@ -88,7 +88,7 @@ module PolyId
       end
 
       def polyid_resolved_uuid_attribute
-        return @polyid_resolved_uuid_attribute if instance_variable_defined?(:@polyid_resolved_uuid_attribute)
+        return @polyid_resolved_uuid_attribute if defined?(@polyid_resolved_uuid_attribute)
 
         @polyid_resolved_uuid_attribute =
           if polyid_uuid_attribute.present?
@@ -110,25 +110,29 @@ module PolyId
       end
 
       def polyid_binary_uuid?
-        uuid_attribute = polyid_resolved_uuid_attribute
-        return false unless uuid_attribute
-
-        columns_hash[uuid_attribute]&.type == :binary
+        columns_hash[polyid_resolved_uuid_attribute]&.type == :binary
       end
 
       def polyid_uuid_type
         @polyid_uuid_type ||= PolyId::BinaryUuidType
       end
 
-      def polyid_apply_uuid_type!
-        return unless polyid_binary_uuid?
-        return if type_for_attribute(polyid_resolved_uuid_attribute).is_a?(polyid_uuid_type)
+      def polyid_initialize!
+        return if @polyid_initialized
 
-        attribute(polyid_resolved_uuid_attribute, polyid_uuid_type.new)
+        # binary UUID support
+        uuid_attribute = polyid_resolved_uuid_attribute
+        if uuid_attribute &&
+            columns_hash[uuid_attribute]&.type == :binary &&
+            !type_for_attribute(uuid_attribute).is_a?(polyid_uuid_type)
+          attribute(uuid_attribute, polyid_uuid_type.new)
+        end
+
+        @polyid_initialized = true
       end
 
       def resolve_polyids(values)
-        polyid_apply_uuid_type!
+        polyid_initialize!
 
         uuids = values.select { |value| PolyId.is_uuid?(value) }
         cached_ids = PolyId::Cache.fetch_ids(name, uuids: uuids) do |missing_uuids|
