@@ -1,4 +1,18 @@
 RSpec.describe PolyId::Cache do
+  class CountingMemoryStore < ActiveSupport::Cache::MemoryStore
+    attr_reader :read_entry_calls
+
+    def initialize(...)
+      super
+      @read_entry_calls = Hash.new(0)
+    end
+
+    def read_entry(key, **options)
+      @read_entry_calls[key] += 1
+      super
+    end
+  end
+
   let(:cache) { PolyId.cache }
   let(:model_name) { User.name }
 
@@ -222,6 +236,21 @@ RSpec.describe PolyId::Cache do
       expect(raw_uuid_entry).not_to be_nil
       expect(User.uuid_for(user.id)).to eq(user.uuid)
       expect(User.id_for(user.uuid)).to eq(user.id)
+    end
+
+    it 'supports Rails local cache strategy on top of a shared store' do
+      PolyId.cache = CountingMemoryStore.new(size: 1.megabyte)
+      user = create(:user)
+
+      described_class.write(model_name, id: user.id, uuid: user.uuid)
+      uuid_key = "polyid/#{model_name}/uuid:#{user.uuid}"
+
+      PolyId.cache.with_local_cache do
+        expect(described_class.read(model_name, uuid: user.uuid)).to eq(user.id)
+        expect(described_class.read(model_name, uuid: user.uuid)).to eq(user.id)
+      end
+
+      expect(PolyId.cache.read_entry_calls[uuid_key]).to eq(1)
     end
   end
 end

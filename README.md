@@ -71,6 +71,32 @@ PolyId.default_uuid_attribute = :public_id
 
 The cache is warmed automatically when records are loaded and updated.
 
+### Rails-native multilayer caching (local + shared)
+
+You can use Rails' built-in local-cache strategy with a shared cache store
+(for example Redis), without adding a custom cache wrapper in PolyId.
+
+In Rails, `ActiveSupport::Cache::RedisCacheStore` supports local caching via
+`with_local_cache` (and request middleware in full Rails apps). Configure a
+shared store, then rely on Rails local cache to keep hot lookups in-process.
+
+```ruby
+# config/environments/production.rb
+config.cache_store = :redis_cache_store, {
+  url: ENV.fetch("REDIS_URL"),
+}
+
+# config/initializers/polyid.rb
+PolyId.cache = Rails.cache
+```
+
+If you need to demonstrate or force local cache behavior in a block:
+
+```ruby
+Rails.cache.with_local_cache do
+  User.id_for("8f47a7ca-8f4a-4d7b-96e6-60a0b47ddf68")
+end
+```
 
 ----
 ## Contributing
