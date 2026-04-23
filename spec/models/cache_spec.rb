@@ -1,15 +1,33 @@
 RSpec.describe PolyId::Cache do
-  class CountingMemoryStore < ActiveSupport::Cache::MemoryStore
+  class CountingStore < ActiveSupport::Cache::Store
+    include ActiveSupport::Cache::Strategy::LocalCache
+
     attr_reader :read_entry_calls
 
     def initialize(...)
       super
+      @data = {}
       @read_entry_calls = Hash.new(0)
     end
 
-    def read_entry(key, **options)
+    def read_entry(key, **)
       @read_entry_calls[key] += 1
-      super
+      @data[key]
+    end
+
+    def write_entry(key, entry, **)
+      @data[key] = entry
+      true
+    end
+
+    def delete_entry(key, **)
+      @data.delete(key)
+      true
+    end
+
+    def clear(**)
+      @data.clear
+      true
     end
   end
 
@@ -239,7 +257,7 @@ RSpec.describe PolyId::Cache do
     end
 
     it 'supports Rails local cache strategy on top of a shared store' do
-      PolyId.cache = CountingMemoryStore.new(size: 1.megabyte)
+      PolyId.cache = CountingStore.new
       user = create(:user)
 
       described_class.write(model_name, id: user.id, uuid: user.uuid)
