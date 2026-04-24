@@ -4,6 +4,7 @@ module PolyId
 
     included do
       class_attribute :polyid_uuid_attribute_raw, instance_writer: false
+      class_attribute :polyid_third_id_attribute_raw, instance_writer: false
       class_attribute :polyid_uuid_generator, instance_writer: false
 
       before_validation :polyid_assign_uuid, on: :create
@@ -14,8 +15,9 @@ module PolyId
     end
 
     class_methods do
-      def polyid(uuid_attribute: PolyId.default_uuid_attribute, uuid_generator: nil)
+      def polyid(uuid_attribute: PolyId.default_uuid_attribute, third_id_attribute: nil, uuid_generator: nil)
         self.polyid_uuid_attribute_raw = uuid_attribute.to_s
+        self.polyid_third_id_attribute_raw = third_id_attribute&.to_s
         self.polyid_uuid_generator = uuid_generator
         polyid_initialize!
       end
@@ -37,16 +39,20 @@ module PolyId
       def ids_for(values)
         values = Array(values)
         uuids = values.select { |value| PolyId.is_uuid?(value) }
+        third_ids = polyid_extract_third_id_candidates(values)
 
         resolved_uuids = PolyId::Cache.fetch_ids(name, uuids: uuids) do |missing_uuids|
           where(polyid_uuid_attribute => missing_uuids).each_with_object({}) do |record, resolved|
             resolved[record.public_send(polyid_uuid_attribute)] = record.public_send(primary_key)
           end
         end
+        resolved_third_ids = polyid_resolve_third_ids(third_ids)
 
         values.map do |value|
           if PolyId.is_uuid?(value)
             resolved_uuids[value]
+          elsif resolved_third_ids.key?(value)
+            resolved_third_ids[value]
           else
             value
           end
@@ -113,6 +119,15 @@ module PolyId
         columns_hash[polyid_uuid_attribute]&.type == :binary
       end
 
+      def polyid_third_id_attribute
+        return @polyid_third_id_attribute if defined?(@polyid_third_id_attribute)
+
+        @polyid_third_id_attribute =
+          if polyid_third_id_attribute_raw.present? && polyid_third_id_attribute_raw != polyid_uuid_attribute
+            polyid_third_id_attribute_raw
+          end
+      end
+
       def polyid_uuid_type
         @polyid_uuid_type ||= PolyId::BinaryUuidType
       end
@@ -135,14 +150,36 @@ module PolyId
         polyid_initialize!
 
         uuids = values.select { |value| PolyId.is_uuid?(value) }
+        third_ids = polyid_extract_third_id_candidates(values)
         cached_ids = PolyId::Cache.fetch_ids(name, uuids: uuids) do |missing_uuids|
           where(polyid_uuid_attribute => missing_uuids).each_with_object({}) do |record, ids|
             ids[record.public_send(polyid_uuid_attribute)] = record.public_send(primary_key)
           end
         end
+        third_id_matches = polyid_resolve_third_ids(third_ids)
 
         values.map do |value|
-          PolyId.is_uuid?(value) ? cached_ids[value] : value
+          if PolyId.is_uuid?(value)
+            cached_ids[value]
+          elsif third_id_matches.key?(value)
+            third_id_matches[value]
+          else
+            value
+          end
+        end
+      end
+
+      def polyid_extract_third_id_candidates(values)
+        return [] unless polyid_third_id_attribute
+
+        values.select { |value| value.is_a?(String) && !PolyId.is_uuid?(value) }
+      end
+
+      def polyid_resolve_third_ids(values)
+        return {} if values.empty?
+
+        where(polyid_third_id_attribute => values).each_with_object({}) do |record, resolved|
+          resolved[record.public_send(polyid_third_id_attribute)] = record.public_send(primary_key)
         end
       end
     end

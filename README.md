@@ -53,6 +53,15 @@ class Account < ApplicationRecord
 end
 ```
 
+You can also configure an optional third identifier column for lookups:
+
+```ruby
+class Membership < ApplicationRecord
+  # keeps default uuid support and also allows Membership.find(external_id)
+  polyid third_id_attribute: :external_id
+end
+```
+
 ### Auto-detection
 
 By default, PolyId automatically enables translation helpers for models that
