@@ -3,6 +3,12 @@ RSpec.describe PolyId::BinaryUuidType do
 
   let(:uuid) { SecureRandom.uuid }
   let(:binary_uuid) { [uuid.delete("-")].pack("H*") }
+  let(:invalid_variant_binary_uuid) do
+    binary_uuid.setbyte(8, binary_uuid.getbyte(8) & 0b0011_1111)
+  end
+  let(:invalid_version_binary_uuid) do
+    binary_uuid.setbyte(6, binary_uuid.getbyte(6) & 0b0000_1111)
+  end
 
   describe "#cast" do
     it "returns nil for nil" do
@@ -15,6 +21,18 @@ RSpec.describe PolyId::BinaryUuidType do
 
     it "deserializes raw 16-byte binary uuid data" do
       expect(type.cast(binary_uuid)).to eq(uuid)
+    end
+
+    it "raises for 16-byte data with a non-rfc4122 variant" do
+      expect {
+        type.cast(invalid_variant_binary_uuid)
+      }.to raise_error(ArgumentError, /invalid uuid/)
+    end
+
+    it "raises for 16-byte data with an invalid version nibble" do
+      expect {
+        type.cast(invalid_version_binary_uuid)
+      }.to raise_error(ArgumentError, /invalid uuid/)
     end
 
     it "raises for an invalid string" do
@@ -49,6 +67,12 @@ RSpec.describe PolyId::BinaryUuidType do
       expect(serialized.to_s).to eq(binary_uuid)
     end
 
+    it "raises for 16-byte data with a non-rfc4122 variant" do
+      expect {
+        type.serialize(invalid_variant_binary_uuid)
+      }.to raise_error(ArgumentError, /invalid uuid/)
+    end
+
     it "raises for an invalid string" do
       expect {
         type.serialize("abc")
@@ -69,6 +93,10 @@ RSpec.describe PolyId::BinaryUuidType do
       value = ActiveModel::Type::Binary::Data.new(binary_uuid)
 
       expect(type.deserialize(value)).to eq(uuid)
+    end
+
+    it "passes through 16-byte data with a non-rfc4122 variant" do
+      expect(type.deserialize(invalid_variant_binary_uuid)).to eq(invalid_variant_binary_uuid)
     end
 
     it "passes through non-binary strings" do

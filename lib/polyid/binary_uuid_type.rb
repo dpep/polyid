@@ -40,7 +40,12 @@ module PolyId
     end
 
     def binary_uuid_bytes?(value)
-      value.is_a?(String) && value.bytesize == 16
+      return false unless value.is_a?(String) && value.bytesize == 16
+
+      version = value.getbyte(6) >> 4
+      variant = value.getbyte(8) >> 6
+
+      version.between?(1, 8) && variant == 0b10
     end
   end
 end
