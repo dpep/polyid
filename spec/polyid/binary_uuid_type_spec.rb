@@ -4,14 +4,10 @@ RSpec.describe PolyId::BinaryUuidType do
   let(:uuid) { SecureRandom.uuid }
   let(:binary_uuid) { [uuid.delete("-")].pack("H*") }
   let(:invalid_variant_binary_uuid) do
-    value = binary_uuid.dup
-    value.setbyte(8, value.getbyte(8) & 0b0011_1111)
-    value
+    binary_uuid.setbyte(8, binary_uuid.getbyte(8) & 0b0011_1111)
   end
   let(:invalid_version_binary_uuid) do
-    value = binary_uuid.dup
-    value.setbyte(6, value.getbyte(6) & 0b0000_1111)
-    value
+    binary_uuid.setbyte(6, binary_uuid.getbyte(6) & 0b0000_1111)
   end
 
   describe "#cast" do
