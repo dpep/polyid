@@ -69,8 +69,21 @@ You can also change which UUID column name auto-detection checks:
 PolyId.default_uuid_attribute = :public_id
 ```
 
-The cache is warmed automatically when records are loaded and updated.
+### Caching
 
+PolyId caches `id <=> uuid` translations in memory by default. The cache is warmed automatically when records are loaded and updated.
+
+To improve performance, set it to a shared cache store such as Redis or `Rails.cache`.
+
+```ruby
+# config/environments/production.rb
+config.cache_store = :redis_cache_store, {
+  url: ENV.fetch("REDIS_URL"),
+}
+
+# config/initializers/polyid.rb
+PolyId.cache = Rails.cache
+```
 
 ----
 ## Contributing
