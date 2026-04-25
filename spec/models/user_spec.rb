@@ -127,4 +127,13 @@ RSpec.describe User do
       expect(User.uuids_for([user.uuid, nil])).to eq([user.uuid, nil])
     end
   end
+
+  describe '.where' do
+    let(:user) { create(:user) }
+
+    it 'matches dashed values in scalar and array where clauses' do
+      expect(User.where(uuid: user.uuid)).to eq([user])
+      expect(User.where(uuid: [user.uuid])).to eq([user])
+    end
+  end
 end
