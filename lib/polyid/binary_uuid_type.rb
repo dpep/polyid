@@ -21,7 +21,7 @@ module PolyId
       return if value.nil?
 
       bytes = value.is_a?(Data) ? value.to_s : value
-      return bytes unless binary_uuid_bytes?(bytes)
+      return PolyId.normalize_uuid(bytes) || bytes unless binary_uuid_bytes?(bytes)
 
       bytes.unpack("H8H4H4H4H12").join("-")
     end
@@ -29,8 +29,8 @@ module PolyId
     private
 
     def normalize_uuid(value)
-      uuid = value.to_s
-      raise ArgumentError, "invalid uuid: #{value.inspect}" unless PolyId.is_uuid?(uuid)
+      uuid = PolyId.normalize_uuid(value.to_s)
+      raise ArgumentError, "invalid uuid: #{value.inspect}" unless uuid
 
       uuid
     end

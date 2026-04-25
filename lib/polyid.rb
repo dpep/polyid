@@ -12,7 +12,8 @@ require "polyid/model"
 require "polyid/version"
 
 module PolyId
-  UUID_PATTERN = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/i
+  DASHED_UUID_PATTERN = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/i
+  UNDASHED_UUID_PATTERN = /\A\h{32}\z/i
 
   class << self
     attr_writer :cache, :cache_binary_uuids, :uuid_generator, :auto_detect, :default_uuid_attribute
@@ -67,7 +68,24 @@ module PolyId
     end
 
     def is_uuid?(value)
-      value.is_a?(String) && UUID_PATTERN.match?(value)
+      !normalize_uuid(value).nil?
+    end
+
+    def normalize_uuid(value)
+      return unless value.is_a?(String)
+
+      return value if DASHED_UUID_PATTERN.match?(value)
+
+      raw_uuid = value.delete("-")
+      return unless UNDASHED_UUID_PATTERN.match?(raw_uuid)
+
+      [
+        raw_uuid[0, 8],
+        raw_uuid[8, 4],
+        raw_uuid[12, 4],
+        raw_uuid[16, 4],
+        raw_uuid[20, 12]
+      ].join("-")
     end
   end
 end

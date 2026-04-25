@@ -64,6 +64,12 @@ RSpec.describe PolyId do
         it { is_expected.to be true }
       end
 
+      context 'with an undashed hexadecimal uuid' do
+        let(:value) { SecureRandom.uuid.delete("-") }
+
+        it { is_expected.to be true }
+      end
+
     context 'with a non-uuid string' do
       let(:value) { "abc" }
 
@@ -80,6 +86,28 @@ RSpec.describe PolyId do
       let(:value) { nil }
 
       it { is_expected.to be false }
+    end
+  end
+
+  describe '.normalize_uuid' do
+    subject(:normalize_uuid) { described_class.normalize_uuid(value) }
+
+    context 'with a dashed uuid' do
+      let(:value) { SecureRandom.uuid }
+
+      it { is_expected.to eq(value) }
+    end
+
+    context 'with an undashed uuid' do
+      let(:value) { SecureRandom.uuid.delete("-") }
+
+      it { is_expected.to match(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/i) }
+    end
+
+    context 'with an invalid value' do
+      let(:value) { "abc" }
+
+      it { is_expected.to be_nil }
     end
   end
 end
