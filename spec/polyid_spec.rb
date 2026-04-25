@@ -64,8 +64,26 @@ RSpec.describe PolyId do
         it { is_expected.to be true }
       end
 
+      context 'with an undashed hexadecimal uuid' do
+        let(:value) { SecureRandom.uuid.delete("-") }
+
+        it { is_expected.to be false }
+      end
+
     context 'with a non-uuid string' do
       let(:value) { "abc" }
+
+      it { is_expected.to be false }
+    end
+
+    context 'with a uuid-shaped string with an invalid version nibble' do
+      let(:value) { "12345678-1234-0234-8234-123456789abc" }
+
+      it { is_expected.to be false }
+    end
+
+    context 'with a uuid-shaped string with an invalid variant nibble' do
+      let(:value) { "12345678-1234-1234-7234-123456789abc" }
 
       it { is_expected.to be false }
     end

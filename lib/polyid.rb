@@ -67,7 +67,12 @@ module PolyId
     end
 
     def is_uuid?(value)
-      value.is_a?(String) && UUID_PATTERN.match?(value)
+      return false unless value.is_a?(String) && UUID_PATTERN.match?(value)
+
+      version = value.getbyte(14).chr.to_i(16)
+      variant = value.getbyte(19).chr.to_i(16)
+
+      version.between?(1, 8) && variant.between?(8, 11)
     end
   end
 end
