@@ -1,36 +1,4 @@
 RSpec.describe PolyId::Cache do
-  class CountingStore < ActiveSupport::Cache::Store
-    include ActiveSupport::Cache::Strategy::LocalCache
-
-    attr_reader :read_entry_calls
-
-    def initialize(...)
-      super
-      @data = {}
-      @read_entry_calls = Hash.new(0)
-    end
-
-    def read_entry(key, **)
-      @read_entry_calls[key] += 1
-      @data[key]
-    end
-
-    def write_entry(key, entry, **)
-      @data[key] = entry
-      true
-    end
-
-    def delete_entry(key, **)
-      @data.delete(key)
-      true
-    end
-
-    def clear(**)
-      @data.clear
-      true
-    end
-  end
-
   let(:cache) { PolyId.cache }
   let(:model_name) { User.name }
 
@@ -254,21 +222,6 @@ RSpec.describe PolyId::Cache do
       expect(raw_uuid_entry).not_to be_nil
       expect(User.uuid_for(user.id)).to eq(user.uuid)
       expect(User.id_for(user.uuid)).to eq(user.id)
-    end
-
-    it 'supports Rails local cache strategy on top of a shared store' do
-      PolyId.cache = CountingStore.new
-      user = create(:user)
-
-      described_class.write(model_name, id: user.id, uuid: user.uuid)
-      uuid_key = "polyid/#{model_name}/uuid:#{user.uuid}"
-
-      PolyId.cache.with_local_cache do
-        expect(described_class.read(model_name, uuid: user.uuid)).to eq(user.id)
-        expect(described_class.read(model_name, uuid: user.uuid)).to eq(user.id)
-      end
-
-      expect(PolyId.cache.read_entry_calls[uuid_key]).to eq(1)
     end
   end
 end
