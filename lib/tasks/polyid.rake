@@ -8,9 +8,11 @@ namespace :polyid do
 
     raise ArgumentError, "#{model_name} is not configured with polyid" unless model.respond_to?(:polyid?) && model.polyid?
 
+    serializer = model.type_for_attribute(uuid_attribute)
+
     model.unscoped.where(uuid_attribute => nil).in_batches(of: batch_size) do |records|
       records.each do |record|
-        serialized_uuid = model.send(:polyid_uuid_type).serialize(model.send(:polyid_generate_uuid)).to_s
+        serialized_uuid = serializer.serialize(model.send(:polyid_generate_uuid)).to_s
 
         record.update_columns(uuid_attribute => serialized_uuid)
       end
