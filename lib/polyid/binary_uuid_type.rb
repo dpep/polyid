@@ -17,6 +17,10 @@ module PolyId
       super(bytes)
     end
 
+    def serialize_cast_value(value)
+      serialize(value)
+    end
+
     def deserialize(value)
       return if value.nil?
 
