@@ -78,11 +78,7 @@ module PolyId
         end
 
         values.map do |value|
-          if PolyId.is_uuid?(value)
-            value
-          else
-            resolved_ids[value]
-          end
+          PolyId.is_uuid?(value) ? value : resolved_ids[value]
         end
       end
 
