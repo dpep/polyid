@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.authors     = ["Daniel Pepper"]
-  s.description = "..."
+  s.description = "Use ID and UUID keys interchangeably"
   s.files       = `git ls-files * ':!:spec'`.split("\n")
   s.homepage    = "https://github.com/dpep/polyid"
   s.license     = "MIT"
