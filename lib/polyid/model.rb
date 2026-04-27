@@ -20,6 +20,16 @@ module PolyId
         polyid_initialize!
       end
 
+      def new(...)
+        polyid_initialize! # eager load
+        super
+      end
+
+      def type_for_attribute(...)
+        polyid_initialize! # eager load
+        super
+      end
+
       def find(*ids)
         return super unless polyid?
 
@@ -124,7 +134,7 @@ module PolyId
         uuid_attribute = polyid_uuid_attribute
         if uuid_attribute &&
             columns_hash[uuid_attribute]&.type == :binary &&
-            !type_for_attribute(uuid_attribute).is_a?(polyid_uuid_type)
+            !attribute_types[uuid_attribute].is_a?(polyid_uuid_type)
           attribute(uuid_attribute, polyid_uuid_type.new)
         end
 
