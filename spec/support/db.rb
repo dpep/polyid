@@ -34,6 +34,12 @@ ActiveRecord::Schema.define do
   create_table :legacy_users, force: true do |t|
     t.string :name
   end
+
+  create_table :memberships, force: true do |t|
+    t.string :name
+    t.string :uuid, null: false
+    t.string :external_id
+  end
 end
 
 class User < ActiveRecord::Base
@@ -47,4 +53,8 @@ class Widget < ActiveRecord::Base
 end
 
 class LegacyUser < ActiveRecord::Base
+end
+
+class Membership < ActiveRecord::Base
+  polyid third_id_attribute: :external_id
 end
