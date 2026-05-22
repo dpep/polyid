@@ -1,3 +1,3 @@
 module PolyId
-  VERSION = Gem.loaded_specs["polyid"].version.to_s
+  VERSION = "0.2.0"
 end
