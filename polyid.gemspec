@@ -1,12 +1,14 @@
+require_relative "lib/polyid/version"
+
 Gem::Specification.new do |s|
   s.authors     = ["Daniel Pepper"]
   s.description = "Use ID and UUID keys interchangeably"
   s.files       = `git ls-files * ':!:spec'`.split("\n")
   s.homepage    = "https://github.com/dpep/polyid"
   s.license     = "MIT"
-  s.name        = File.basename(__FILE__, ".gemspec")
+  s.name        = "polyid"
   s.summary     = "PolyId"
-  s.version     = "0.2.0"
+  s.version     = PolyId::VERSION
 
   s.required_ruby_version = ">= 3.3"
 
