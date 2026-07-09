@@ -17,4 +17,10 @@ FactoryBot.define do
   factory :widget do
     name { Faker::Name.name }
   end
+
+  factory :membership do
+    name { Faker::Name.name }
+    uuid { SecureRandom.uuid }
+    external_id { SecureRandom.hex(8) }
+  end
 end
