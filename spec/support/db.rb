@@ -19,6 +19,7 @@ ActiveRecord::Schema.define do
   create_table :users, force: true do |t|
     t.string :name
     t.string :uuid, null: false
+    t.references :account
   end
 
   create_table :accounts, force: true do |t|
@@ -37,9 +38,11 @@ ActiveRecord::Schema.define do
 end
 
 class User < ActiveRecord::Base
+  belongs_to :account, optional: true
 end
 
 class Account < ActiveRecord::Base
+  has_many :users
 end
 
 class Widget < ActiveRecord::Base

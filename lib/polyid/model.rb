@@ -40,6 +40,13 @@ module PolyId
         end
       end
 
+      # `find_by` has a statement cache fast path that bypasses `where`
+      def find_by(*args)
+        return super unless args.length == 1 && args.first.is_a?(Hash)
+
+        super(polyid_translate_conditions(args.first))
+      end
+
       def id_for(value)
         ids_for([value]).first
       end
@@ -85,6 +92,23 @@ module PolyId
       def polyid?
         polyid_initialize!
         polyid_uuid_attribute.present?
+      end
+
+      # translates UUIDs in primary key conditions into ids, eg. `id: uuid`
+      def polyid_translate_conditions(conditions)
+        return conditions if primary_key.nil?
+
+        key = [ primary_key, primary_key.to_sym ].find { |k| conditions.key?(k) }
+        return conditions if key.nil?
+
+        values = conditions[key]
+        # NOTE: avoid Array(), which would expand a Range
+        is_array = values.is_a?(Array)
+        return conditions unless is_array ? values.any? { |value| PolyId.is_uuid?(value) } : PolyId.is_uuid?(values)
+        return conditions unless polyid?
+
+        ids = ids_for(values)
+        conditions.merge(key => is_array ? ids : ids.first)
       end
 
       private
