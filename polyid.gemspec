@@ -12,7 +12,8 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = ">= 3.3"
 
-  s.add_development_dependency 'activerecord', '>= 7'
+  s.add_dependency 'activerecord', '>= 7'
+
   s.add_development_dependency 'debug', '>= 1'
   s.add_development_dependency 'factory_bot', '>= 6'
   s.add_development_dependency 'faker', '>= 3'
