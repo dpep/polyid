@@ -3,12 +3,14 @@ require "active_support/cache"
 require "active_support/concern"
 require "active_support/core_ext/object/blank"
 require "active_support/core_ext/class/attribute"
+require "active_support/core_ext/string/inflections"
 require "active_support/lazy_load_hooks"
 require "securerandom"
 require "active_model/type"
 require "polyid/binary_uuid_type"
 require "polyid/cache"
 require "polyid/model"
+require "polyid/relation"
 require "polyid/version"
 
 module PolyId
@@ -79,6 +81,8 @@ end
 
 ActiveSupport.on_load(:active_record) do
   include PolyId::Model
+
+  ActiveRecord::Relation.prepend(PolyId::Relation)
 end
 
 require "polyid/railtie" if defined?(Rails::Railtie)

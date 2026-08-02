@@ -40,6 +40,13 @@ module PolyId
         end
       end
 
+      # `find_by` has a statement cache fast path that bypasses `where`
+      def find_by(*args)
+        return super unless args.length == 1 && args.first.is_a?(Hash)
+
+        super(polyid_translate_conditions(args.first))
+      end
+
       def id_for(value)
         ids_for([value]).first
       end
@@ -87,7 +94,46 @@ module PolyId
         polyid_uuid_attribute.present?
       end
 
+      # translates UUIDs into ids, eg. `id: uuid` and `users: { id: uuid }`.
+      # nested conditions are translated even when this model isn't polyid.
+      def polyid_translate_conditions(conditions)
+        translated = nil
+        pk = primary_key if polyid?
+
+        conditions.each do |key, values|
+          new_values =
+            if values.is_a?(Hash)
+              polyid_associated_model(key)&.polyid_translate_conditions(values)
+            elsif pk && key.to_s == pk
+              polyid_translate_ids(values)
+            end
+          next if new_values.nil? || new_values.equal?(values)
+
+          translated ||= conditions.dup
+          translated[key] = new_values
+        end
+
+        translated || conditions
+      end
+
       private
+
+      def polyid_translate_ids(values)
+        is_array = values.is_a?(Array)
+        return values unless is_array ? values.any? { |value| PolyId.is_uuid?(value) } : PolyId.is_uuid?(values)
+
+        ids = ids_for(values)
+        is_array ? ids : ids.first
+      end
+
+      # mirrors ActiveRecord::TableMetadata#associated_table
+      def polyid_associated_model(key)
+        reflection = reflect_on_association(key) || reflect_on_association(key.to_s.singularize)
+        return self if reflection.nil? && key.to_s == table_name
+        return if reflection.nil? || reflection.polymorphic?
+
+        reflection.klass
+      end
 
       def polyid_generate_uuid
         PolyId.generate_uuid(polyid_uuid_generator || PolyId.uuid_generator)
