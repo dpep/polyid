@@ -38,6 +38,21 @@ User.find(user.id, user.uuid)
 User.find([user.uuid, user.id])
 ```
 
+UUIDs work anywhere the primary key is expected, including through relations and
+associations:
+
+```ruby
+User.where(id: user.uuid)
+User.find_by(id: user.uuid)
+User.where.not(id: user.uuid)
+
+account.users.find(user.uuid)
+account.users.where(id: user.uuid)
+```
+
+Scopes are still enforced, so `account.users.find(uuid)` raises
+`ActiveRecord::RecordNotFound` for a user belonging to another account.
+
 Translation helpers preserve input order and return `nil` for misses:
 
 ```ruby

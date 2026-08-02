@@ -1,3 +1,6 @@
+###  Unreleased
+- uuid lookups via relations and associations
+
 ###  0.2.0  (2026-04-26)
 - casting upgrade
 - is_uuid upgrade
