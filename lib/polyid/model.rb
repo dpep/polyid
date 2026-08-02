@@ -126,7 +126,6 @@ module PolyId
       end
 
       def polyid_translate_ids(values)
-        # NOTE: avoid Array(), which expands Ranges
         is_array = values.is_a?(Array)
         return values unless is_array ? values.any? { |value| PolyId.is_uuid?(value) } : PolyId.is_uuid?(values)
 
