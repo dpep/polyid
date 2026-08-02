@@ -34,7 +34,7 @@ RSpec.describe 'relation lookups' do
 
     it 'raises when the uuid does not exist' do
       expect {
-        User.all.find(SecureRandom.uuid)
+        User.all.find(UNKNOWN_UUID)
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
 
@@ -66,7 +66,7 @@ RSpec.describe 'relation lookups' do
     end
 
     it 'returns nothing when the uuid does not exist' do
-      expect(User.where(id: SecureRandom.uuid)).to be_empty
+      expect(User.where(id: UNKNOWN_UUID)).to be_empty
     end
 
     it 'supports find_by' do
@@ -143,7 +143,7 @@ RSpec.describe 'relation lookups' do
 
       expect(LegacyUser.all.find(legacy.id)).to eq(legacy)
       expect(LegacyUser.where(id: legacy.id)).to eq([ legacy ])
-      expect(LegacyUser.where(id: SecureRandom.uuid)).to be_empty
+      expect(LegacyUser.where(id: UNKNOWN_UUID)).to be_empty
     end
   end
 end
