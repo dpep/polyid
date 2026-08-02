@@ -36,12 +36,12 @@ RSpec.describe 'auto-detection' do
 
     expect(LegacyUser.polyid?).to be(false)
     expect(LegacyUser.find(user.id)).to eq(user)
-    expect { LegacyUser.find(SecureRandom.uuid) }.to raise_error(ActiveRecord::RecordNotFound)
+    expect { LegacyUser.find(UNKNOWN_UUID) }.to raise_error(ActiveRecord::RecordNotFound)
   end
 
   it 'can disable auto-detection globally' do
     PolyId.auto_detect = false
-    user = User.create!(name: 'User', uuid: SecureRandom.uuid)
+    user = User.create!(name: 'User', uuid: UNKNOWN_UUID)
 
     expect(User.polyid?).to be(false)
     expect { User.find(user.uuid) }.to raise_error(ActiveRecord::RecordNotFound)
