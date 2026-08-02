@@ -112,6 +112,16 @@ RSpec.describe 'relation lookups' do
       expect(LegacyUser.joins(:users).where(users: { id: user.uuid })).to eq([ legacy ])
     end
 
+    it 'resolves the model own table' do
+      expect(User.joins(:account).where(users: { id: user.uuid })).to eq([ user ])
+    end
+
+    it 'leaves polymorphic associations alone' do
+      conditions = { owner: { id: SecureRandom.uuid } }
+
+      expect(Widget.polyid_translate_conditions(conditions)).to eq(conditions)
+    end
+
     it 'leaves unresolvable and non-uuid conditions alone' do
       expect(Account.joins(:users).where(users: { name: user.name })).to eq([ account ])
       expect(Account.joins(:users).where(users: { id: user.id })).to eq([ account ])

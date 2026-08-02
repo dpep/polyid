@@ -135,7 +135,7 @@ module PolyId
 
       # mirrors ActiveRecord::TableMetadata#associated_table
       def polyid_associated_model(key)
-        reflection = _reflect_on_association(key) || _reflect_on_association(key.to_s.singularize)
+        reflection = reflect_on_association(key) || reflect_on_association(key.to_s.singularize)
         return self if reflection.nil? && key.to_s == table_name
         return if reflection.nil? || reflection.polymorphic?
 

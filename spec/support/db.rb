@@ -31,6 +31,7 @@ ActiveRecord::Schema.define do
   create_table :widgets, force: true do |t|
     t.string :name
     t.string :public_id
+    t.references :owner, polymorphic: true
   end
 
   create_table :legacy_users, force: true do |t|
@@ -48,6 +49,8 @@ class Account < ActiveRecord::Base
 end
 
 class Widget < ActiveRecord::Base
+  belongs_to :owner, polymorphic: true, optional: true
+
   polyid uuid_attribute: :public_id, uuid_generator: -> { "00000000-0000-7000-8000-000000000001" }
 end
 
