@@ -98,13 +98,13 @@ module PolyId
       # nested conditions are translated even when this model isn't polyid.
       def polyid_translate_conditions(conditions)
         translated = nil
-        primary_keys = polyid_primary_keys
+        pk = primary_key if polyid?
 
         conditions.each do |key, values|
           new_values =
             if values.is_a?(Hash)
               polyid_associated_model(key)&.polyid_translate_conditions(values)
-            elsif primary_keys.include?(key)
+            elsif pk && key.to_s == pk
               polyid_translate_ids(values)
             end
           next if new_values.nil? || new_values.equal?(values)
@@ -117,13 +117,6 @@ module PolyId
       end
 
       private
-
-      # empty unless this model translates UUIDs, so lookups short circuit
-      def polyid_primary_keys
-        @polyid_primary_keys ||= (
-          polyid? && primary_key ? [ primary_key, primary_key.to_sym ] : []
-        ).freeze
-      end
 
       def polyid_translate_ids(values)
         is_array = values.is_a?(Array)
