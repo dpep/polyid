@@ -20,6 +20,7 @@ ActiveRecord::Schema.define do
     t.string :name
     t.string :uuid, null: false
     t.references :account
+    t.references :legacy_user
   end
 
   create_table :accounts, force: true do |t|
@@ -39,6 +40,7 @@ end
 
 class User < ActiveRecord::Base
   belongs_to :account, optional: true
+  belongs_to :legacy_user, optional: true
 end
 
 class Account < ActiveRecord::Base
@@ -50,4 +52,5 @@ class Widget < ActiveRecord::Base
 end
 
 class LegacyUser < ActiveRecord::Base
+  has_many :users
 end

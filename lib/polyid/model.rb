@@ -94,24 +94,54 @@ module PolyId
         polyid_uuid_attribute.present?
       end
 
-      # translates UUIDs in primary key conditions into ids, eg. `id: uuid`
+      # translates UUIDs into ids, eg. `id: uuid` and `users: { id: uuid }`.
+      # nested conditions are translated even when this model isn't polyid.
       def polyid_translate_conditions(conditions)
-        return conditions if primary_key.nil?
+        translated = nil
+        primary_keys = polyid_primary_keys
 
-        key = [ primary_key, primary_key.to_sym ].find { |k| conditions.key?(k) }
-        return conditions if key.nil?
+        conditions.each do |key, values|
+          new_values =
+            if values.is_a?(Hash)
+              polyid_associated_model(key)&.polyid_translate_conditions(values)
+            elsif primary_keys.include?(key)
+              polyid_translate_ids(values)
+            end
+          next if new_values.nil? || new_values.equal?(values)
 
-        values = conditions[key]
-        # NOTE: avoid Array(), which would expand a Range
-        is_array = values.is_a?(Array)
-        return conditions unless is_array ? values.any? { |value| PolyId.is_uuid?(value) } : PolyId.is_uuid?(values)
-        return conditions unless polyid?
+          translated ||= conditions.dup
+          translated[key] = new_values
+        end
 
-        ids = ids_for(values)
-        conditions.merge(key => is_array ? ids : ids.first)
+        translated || conditions
       end
 
       private
+
+      # empty unless this model translates UUIDs, so lookups short circuit
+      def polyid_primary_keys
+        @polyid_primary_keys ||= (
+          polyid? && primary_key ? [ primary_key, primary_key.to_sym ] : []
+        ).freeze
+      end
+
+      def polyid_translate_ids(values)
+        # NOTE: avoid Array(), which expands Ranges
+        is_array = values.is_a?(Array)
+        return values unless is_array ? values.any? { |value| PolyId.is_uuid?(value) } : PolyId.is_uuid?(values)
+
+        ids = ids_for(values)
+        is_array ? ids : ids.first
+      end
+
+      # mirrors ActiveRecord::TableMetadata#associated_table
+      def polyid_associated_model(key)
+        reflection = _reflect_on_association(key) || _reflect_on_association(key.to_s.singularize)
+        return self if reflection.nil? && key.to_s == table_name
+        return if reflection.nil? || reflection.polymorphic?
+
+        reflection.klass
+      end
 
       def polyid_generate_uuid
         PolyId.generate_uuid(polyid_uuid_generator || PolyId.uuid_generator)

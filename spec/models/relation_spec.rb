@@ -94,6 +94,30 @@ RSpec.describe 'relation lookups' do
     end
   end
 
+  describe 'nested conditions' do
+    it 'translates conditions on an associated model' do
+      user
+
+      expect(Account.joins(:users).where(users: { id: user.uuid })).to eq([ account ])
+    end
+
+    it 'resolves the association by table name' do
+      expect(User.joins(:account).where(accounts: { id: account.uuid })).to eq([ user ])
+    end
+
+    it 'translates even when the parent model is not polyid' do
+      legacy = LegacyUser.create!(name: 'legacy')
+      user.update!(legacy_user: legacy)
+
+      expect(LegacyUser.joins(:users).where(users: { id: user.uuid })).to eq([ legacy ])
+    end
+
+    it 'leaves unresolvable and non-uuid conditions alone' do
+      expect(Account.joins(:users).where(users: { name: user.name })).to eq([ account ])
+      expect(Account.joins(:users).where(users: { id: user.id })).to eq([ account ])
+    end
+  end
+
   context 'with a binary uuid column' do
     it 'finds by uuid through a relation' do
       account
