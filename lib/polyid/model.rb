@@ -48,6 +48,7 @@ module PolyId
       end
 
       def ids_for(values)
+        polyid_required!
         values = Array(values)
         uuids = values.select { |value| PolyId.is_uuid?(value) }
 
@@ -71,6 +72,7 @@ module PolyId
       end
 
       def uuids_for(values)
+        polyid_required!
         values = Array(values)
         ids = values.reject { |value| PolyId.is_uuid?(value) || value.blank? }
 
@@ -112,6 +114,10 @@ module PolyId
       end
 
       private
+
+      def polyid_required!
+        raise ArgumentError, "#{name} is not configured with polyid" unless polyid?
+      end
 
       def polyid_translate_ids(values)
         is_array = values.is_a?(Array)
