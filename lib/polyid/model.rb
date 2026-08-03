@@ -30,9 +30,9 @@ module PolyId
         return super unless polyid?
 
         if ids.length == 1 && ids.first.is_a?(Array)
-          super(resolve_polyids(ids.first))
+          super(ids_for(ids.first))
         else
-          super(*resolve_polyids(ids))
+          super(*ids_for(ids))
         end
       end
 
@@ -169,19 +169,6 @@ module PolyId
 
         decorate_attributes([ uuid_attribute ]) do |_name, subtype|
           PolyId::BinaryUuidType.new if subtype.type == :binary
-        end
-      end
-
-      def resolve_polyids(values)
-        uuids = values.select { |value| PolyId.is_uuid?(value) }
-        cached_ids = PolyId::Cache.fetch_ids(name, uuids: uuids) do |missing_uuids|
-          where(polyid_uuid_attribute => missing_uuids).each_with_object({}) do |record, ids|
-            ids[record.public_send(polyid_uuid_attribute)] = record.public_send(primary_key)
-          end
-        end
-
-        values.map do |value|
-          PolyId.is_uuid?(value) ? cached_ids[value] : value
         end
       end
     end
