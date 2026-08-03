@@ -1,12 +1,6 @@
 module PolyId
   module Cache
     class << self
-      def read(model_name, id: nil, uuid: nil)
-        value = PolyId.cache.read(id.nil? ? uuid_key(model_name, uuid) : id_key(model_name, id))
-
-        id.nil? ? value : decode_uuid(value)
-      end
-
       def read_multi(model_name, ids: [], uuids: [])
         id_keys = ids.to_h { |id| [id, id_key(model_name, id)] }
         uuid_keys = uuids.to_h { |uuid| [uuid, uuid_key(model_name, uuid)] }
@@ -55,10 +49,6 @@ module PolyId
           id_key(model_name, id) => encoded_uuid,
           uuid_key(model_name, uuid, encoded_uuid) => id,
         )
-      end
-
-      def delete(model_name, id:, uuid:)
-        delete_multi(model_name, ids: [id], uuids: [uuid])
       end
 
       def delete_multi(model_name, ids: [], uuids: [])

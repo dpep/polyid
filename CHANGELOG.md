@@ -1,6 +1,7 @@
 ###  Unreleased
 - uuid lookups via relations and associations
 - require activerecord >= 7.2
+- remove unused PolyId::Cache.read and PolyId::Cache.delete
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade
