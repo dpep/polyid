@@ -44,5 +44,29 @@ RSpec.describe Account do
       expect(described_class.id_for(account.uuid)).to eq account.id
       expect(described_class.uuid_for(account.id)).to eq account.uuid
     end
+
+    # the binary type has to be registered before the schema resolves column
+    # types, so a class whose very first use is a query still gets it
+    context "when the first touch is a query" do
+      let(:cold_model) do
+        Class.new(ActiveRecord::Base) do
+          self.table_name = 'accounts'
+
+          def self.name = 'ColdAccount'
+        end
+      end
+
+      it "applies the binary uuid type" do
+        account
+
+        expect(cold_model.where(uuid: account.uuid).first&.id).to eq account.id
+      end
+
+      it "translates a uuid" do
+        account
+
+        expect(cold_model.id_for(account.uuid)).to eq account.id
+      end
+    end
   end
 end

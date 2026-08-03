@@ -17,16 +17,12 @@ module PolyId
       def polyid(uuid_attribute: PolyId.default_uuid_attribute, uuid_generator: nil)
         self.polyid_uuid_attribute_raw = uuid_attribute.to_s
         self.polyid_uuid_generator = uuid_generator
-        polyid_initialize!
       end
 
-      def new(...)
-        polyid_initialize! # eager load
-        super
-      end
-
-      def type_for_attribute(...)
-        polyid_initialize! # eager load
+      # register before the schema builds its attribute set, so the decorator
+      # is applied while the column types are being resolved
+      def load_schema
+        polyid_register_uuid_type
         super
       end
 
@@ -90,7 +86,6 @@ module PolyId
       end
 
       def polyid?
-        polyid_initialize!
         polyid_uuid_attribute.present?
       end
 
@@ -165,27 +160,23 @@ module PolyId
         columns_hash[polyid_uuid_attribute]&.type == :binary
       end
 
-      def polyid_uuid_type
-        @polyid_uuid_type ||= PolyId::BinaryUuidType
-      end
+      # binary UUID support.  the configured attribute name is known without the
+      # schema, and `decorate_attributes` resolves the column type lazily, so
+      # this never reads the schema it is about to load.
+      def polyid_register_uuid_type
+        return if @polyid_uuid_type_registered
+        @polyid_uuid_type_registered = true
 
-      def polyid_initialize!
-        return if @polyid_initialized
+        uuid_attribute = polyid_uuid_attribute_raw.presence ||
+          (PolyId.default_uuid_attribute.to_s if PolyId.auto_detect?)
+        return unless uuid_attribute
 
-        # binary UUID support
-        uuid_attribute = polyid_uuid_attribute
-        if uuid_attribute &&
-            columns_hash[uuid_attribute]&.type == :binary &&
-            !attribute_types[uuid_attribute].is_a?(polyid_uuid_type)
-          attribute(uuid_attribute, polyid_uuid_type.new)
+        decorate_attributes([ uuid_attribute ]) do |_name, subtype|
+          PolyId::BinaryUuidType.new if subtype.type == :binary
         end
-
-        @polyid_initialized = true
       end
 
       def resolve_polyids(values)
-        polyid_initialize!
-
         uuids = values.select { |value| PolyId.is_uuid?(value) }
         cached_ids = PolyId::Cache.fetch_ids(name, uuids: uuids) do |missing_uuids|
           where(polyid_uuid_attribute => missing_uuids).each_with_object({}) do |record, ids|
