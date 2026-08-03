@@ -213,26 +213,32 @@ module PolyId
       )
     end
 
-    # a binary column casts bad input to nil, a string column keeps it verbatim.
-    # check the value we would write, falling back to what was supplied.
+    # a binary column casts bad input to nil, a string column keeps it verbatim
     def polyid_validate_uuid_format
       return unless self.class.polyid?
 
       uuid_attribute = self.class.send(:polyid_uuid_attribute)
-      # on create the value may have cast to nil, which is not a "change"
-      return unless new_record? || will_save_change_to_attribute?(uuid_attribute)
+      value = public_send(uuid_attribute)
 
-      value = public_send(uuid_attribute).presence ||
-        read_attribute_before_type_cast(uuid_attribute)
-      return if value.blank?
+      if value.present?
+        # only judge a value being written, so legacy rows can be saved as-is
+        return unless new_record? || will_save_change_to_attribute?(uuid_attribute)
 
-      errors.add(uuid_attribute, "is invalid") unless PolyId.is_uuid?(value)
+        errors.add(uuid_attribute, "is invalid") unless PolyId.is_uuid?(value)
+      elsif read_attribute_before_type_cast(uuid_attribute).present?
+        # supplied, but failed to cast
+        errors.add(uuid_attribute, "is invalid")
+      end
     end
 
+    # write-once, not read-only: a row predating polyid still needs backfilling
     def polyid_validate_uuid_immutable
+      return unless self.class.polyid?
+
       uuid_attribute = self.class.send(:polyid_uuid_attribute)
       return unless persisted?
       return unless will_save_change_to_attribute?(uuid_attribute)
+      return if attribute_in_database(uuid_attribute).nil?
 
       errors.add(uuid_attribute, "is immutable")
     end

@@ -27,6 +27,42 @@ RSpec.describe "polyid rollout" do
     end
   end
 
+  describe "backfilling a row that predates polyid" do
+    # update_columns skips the callbacks, the same way the rake task does
+    subject(:account) { create(:account).tap { |a| a.update_columns(uuid: nil) }.reload }
+
+    it "starts without a uuid" do
+      expect(account.uuid).to be_nil
+    end
+
+    it "accepts a uuid" do
+      uuid = SecureRandom.uuid
+      account.update!(uuid: uuid)
+
+      expect(account.reload.uuid).to eq(uuid)
+    end
+
+    it "rejects an invalid uuid" do
+      expect {
+        account.update!(uuid: 'garbage')
+      }.to raise_error(ActiveRecord::RecordInvalid, /invalid/)
+    end
+
+    it "can still be saved while awaiting one" do
+      account.update!(name: 'renamed')
+
+      expect(account.reload.uuid).to be_nil
+    end
+
+    it "is immutable once backfilled" do
+      account.update!(uuid: SecureRandom.uuid)
+
+      expect {
+        account.update!(uuid: SecureRandom.uuid)
+      }.to raise_error(ActiveRecord::RecordInvalid, /immutable/)
+    end
+  end
+
   describe Widget do
     subject(:widget) { create(:widget) }
 
