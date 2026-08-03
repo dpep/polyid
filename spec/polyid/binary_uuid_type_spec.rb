@@ -23,28 +23,20 @@ RSpec.describe PolyId::BinaryUuidType do
       expect(type.cast(binary_uuid)).to eq(uuid)
     end
 
-    it "raises for 16-byte data with a non-rfc4122 variant" do
-      expect {
-        type.cast(invalid_variant_binary_uuid)
-      }.to raise_error(ArgumentError, /invalid uuid/)
+    it "returns nil for 16-byte data with a non-rfc4122 variant" do
+      expect(type.cast(invalid_variant_binary_uuid)).to be_nil
     end
 
-    it "raises for 16-byte data with an invalid version nibble" do
-      expect {
-        type.cast(invalid_version_binary_uuid)
-      }.to raise_error(ArgumentError, /invalid uuid/)
+    it "returns nil for 16-byte data with an invalid version nibble" do
+      expect(type.cast(invalid_version_binary_uuid)).to be_nil
     end
 
-    it "raises for an invalid string" do
-      expect {
-        type.cast("abc")
-      }.to raise_error(ArgumentError, /invalid uuid/)
+    it "returns nil for an invalid string" do
+      expect(type.cast("abc")).to be_nil
     end
 
-    it "raises for a non-uuid non-binary value" do
-      expect {
-        type.cast(123)
-      }.to raise_error(ArgumentError, /invalid uuid/)
+    it "returns nil for a non-uuid non-binary value" do
+      expect(type.cast(123)).to be_nil
     end
   end
 
@@ -67,16 +59,12 @@ RSpec.describe PolyId::BinaryUuidType do
       expect(serialized.to_s).to eq(binary_uuid)
     end
 
-    it "raises for 16-byte data with a non-rfc4122 variant" do
-      expect {
-        type.serialize(invalid_variant_binary_uuid)
-      }.to raise_error(ArgumentError, /invalid uuid/)
+    it "returns nil for 16-byte data with a non-rfc4122 variant" do
+      expect(type.serialize(invalid_variant_binary_uuid)).to be_nil
     end
 
-    it "raises for an invalid string" do
-      expect {
-        type.serialize("abc")
-      }.to raise_error(ArgumentError, /invalid uuid/)
+    it "returns nil for an invalid string" do
+      expect(type.serialize("abc")).to be_nil
     end
   end
 

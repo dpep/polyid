@@ -45,6 +45,24 @@ RSpec.describe Account do
       expect(described_class.uuid_for(account.id)).to eq account.uuid
     end
 
+    describe "invalid input" do
+      it "misses rather than raising, matching a string uuid column" do
+        account
+
+        expect(described_class.find_by(uuid: "not-a-uuid")).to be_nil
+        expect(User.find_by(uuid: "not-a-uuid")).to be_nil
+      end
+
+      it "does not match rows still awaiting a uuid" do
+        described_class.connection.execute(
+          "INSERT INTO accounts (name, uuid) VALUES ('legacy', NULL)"
+        )
+
+        expect(described_class.find_by(uuid: "not-a-uuid")).to be_nil
+        expect(described_class.find_by(uuid: nil)&.name).to eq('legacy')
+      end
+    end
+
     # the binary type has to be registered before the schema resolves column
     # types, so a class whose very first use is a query still gets it
     context "when the first touch is a query" do

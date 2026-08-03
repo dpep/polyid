@@ -12,9 +12,10 @@ module PolyId
 
     def serialize(value)
       return if value.nil?
+      return super(value) if binary_uuid_bytes?(value)
 
-      bytes = binary_uuid_bytes?(value) ? value : pack_uuid(normalize_uuid(value))
-      super(bytes)
+      uuid = normalize_uuid(value)
+      super(pack_uuid(uuid)) if uuid
     end
 
     def serialize_cast_value(value)
@@ -34,9 +35,7 @@ module PolyId
 
     def normalize_uuid(value)
       uuid = value.to_s
-      raise ArgumentError, "invalid uuid: #{value.inspect}" unless PolyId.is_uuid?(uuid)
-
-      uuid
+      uuid if PolyId.is_uuid?(uuid)
     end
 
     def pack_uuid(uuid)
