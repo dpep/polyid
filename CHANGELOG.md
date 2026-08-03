@@ -5,6 +5,7 @@
 - translation helpers raise on models not configured with polyid
 - binary uuid columns cast invalid input to nil instead of raising
 - validate uuid format, rejecting invalid input instead of replacing it
+- uuids are write-once, so legacy rows can be backfilled
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade
