@@ -156,10 +156,6 @@ module PolyId
         false
       end
 
-      def polyid_binary_uuid?
-        columns_hash[polyid_uuid_attribute]&.type == :binary
-      end
-
       # binary UUID support.  the configured attribute name is known without the
       # schema, and `decorate_attributes` resolves the column type lazily, so
       # this never reads the schema it is about to load.
