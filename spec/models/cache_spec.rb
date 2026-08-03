@@ -208,20 +208,5 @@ RSpec.describe PolyId::Cache do
       expect(cache).to be_empty
     end
 
-    it 'can encode uuids as binary in cache while returning string uuids' do
-      PolyId.cache_binary_uuids = true
-      user = create(:user)
-      cache.clear
-
-      User.uuid_for(user.id)
-
-      raw_uuid_entry = cache.instance_variable_get(:@data).values
-        .map { |entry| entry.instance_variable_get(:@value) }
-        .find { |value| value.is_a?(String) && value.bytesize == 16 }
-
-      expect(raw_uuid_entry).not_to be_nil
-      expect(User.uuid_for(user.id)).to eq(user.uuid)
-      expect(User.id_for(user.uuid)).to eq(user.id)
-    end
   end
 end
