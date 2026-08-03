@@ -17,7 +17,7 @@ module PolyId
   UUID_PATTERN = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/i
 
   class << self
-    attr_writer :cache, :cache_binary_uuids, :uuid_generator, :auto_detect, :default_uuid_attribute
+    attr_writer :cache, :uuid_generator, :auto_detect, :default_uuid_attribute
 
     def cache
       @cache ||= ActiveSupport::Cache::MemoryStore.new
@@ -27,18 +27,9 @@ module PolyId
       @cache&.clear if instance_variable_defined?(:@cache)
 
       remove_instance_variable(:@cache) if instance_variable_defined?(:@cache)
-      remove_instance_variable(:@cache_binary_uuids) if instance_variable_defined?(:@cache_binary_uuids)
       remove_instance_variable(:@uuid_generator) if instance_variable_defined?(:@uuid_generator)
       remove_instance_variable(:@auto_detect) if instance_variable_defined?(:@auto_detect)
       remove_instance_variable(:@default_uuid_attribute) if instance_variable_defined?(:@default_uuid_attribute)
-    end
-
-    def cache_binary_uuids?
-      unless instance_variable_defined?(:@cache_binary_uuids)
-        @cache_binary_uuids = !!(defined?(Rails) && Rails.respond_to?(:env) && Rails.env.production?)
-      end
-
-      @cache_binary_uuids
     end
 
     def uuid_generator

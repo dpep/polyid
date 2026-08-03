@@ -10,7 +10,7 @@ module PolyId
 
         {
           ids: id_keys.each_with_object({}) do |(id, cache_key), values|
-            values[id] = decode_uuid(cached[cache_key]) if cached.key?(cache_key)
+            values[id] = cached[cache_key] if cached.key?(cache_key)
           end,
           uuids: uuid_keys.each_with_object({}) do |(uuid, cache_key), values|
             values[uuid] = cached[cache_key] if cached.key?(cache_key)
@@ -43,11 +43,9 @@ module PolyId
       end
 
       def write(model_name, id:, uuid:)
-        encoded_uuid = encode_uuid(uuid)
-
         PolyId.cache.write_multi(
-          id_key(model_name, id) => encoded_uuid,
-          uuid_key(model_name, uuid, encoded_uuid) => id,
+          id_key(model_name, id) => uuid,
+          uuid_key(model_name, uuid) => id,
         )
       end
 
@@ -64,24 +62,8 @@ module PolyId
         "polyid/#{model_name}/#{id}"
       end
 
-      def uuid_key(model_name, uuid, encoded_uuid = nil)
-        encoded_uuid ||= encode_uuid(uuid)
-        prefix = PolyId.cache_binary_uuids? ? 'b' : 'uuid:'
-        "polyid/#{model_name}/#{prefix}#{encoded_uuid}"
-      end
-
-      def encode_uuid(uuid)
-        return uuid unless PolyId.cache_binary_uuids?
-
-        hex = uuid.delete("-")
-        [hex].pack("H*")
-      end
-
-      def decode_uuid(uuid)
-        return uuid unless PolyId.cache_binary_uuids?
-        return uuid unless uuid.is_a?(String) && uuid.bytesize == 16
-
-        uuid.unpack("H8H4H4H4H12").join("-")
+      def uuid_key(model_name, uuid)
+        "polyid/#{model_name}/uuid:#{uuid}"
       end
     end
   end
