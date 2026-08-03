@@ -53,6 +53,12 @@ RSpec.describe Account do
         expect(User.find_by(uuid: "not-a-uuid")).to be_nil
       end
 
+      it "is rejected on create rather than silently replaced" do
+        expect {
+          described_class.create!(uuid: 'garbage')
+        }.to raise_error(ActiveRecord::RecordInvalid, /Uuid is invalid/)
+      end
+
       it "does not match rows still awaiting a uuid" do
         described_class.connection.execute(
           "INSERT INTO accounts (name, uuid) VALUES ('legacy', NULL)"

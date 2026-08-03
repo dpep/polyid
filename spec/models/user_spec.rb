@@ -32,6 +32,17 @@ RSpec.describe User do
       expect(user.reload.uuid).to eq(original_uuid)
     end
 
+    it 'rejects an invalid uuid rather than generating one' do
+      expect {
+        User.create!(uuid: 'garbage')
+      }.to raise_error(ActiveRecord::RecordInvalid, /Uuid is invalid/)
+    end
+
+    it 'still generates a uuid when none is given' do
+      expect(User.create!(uuid: nil).uuid).to be_a_uuid
+      expect(User.create!.uuid).to be_a_uuid
+    end
+
     it 'deletes a user' do
       user = create(:user, name: 'Alice Jones')
       user.destroy

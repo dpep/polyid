@@ -7,6 +7,7 @@ module PolyId
       class_attribute :polyid_uuid_generator, instance_writer: false
 
       before_validation :polyid_assign_uuid, on: :create
+      validate :polyid_validate_uuid_format
       validate :polyid_validate_uuid_immutable
       after_find :polyid_warm_cache
       after_save :polyid_warm_cache
@@ -186,6 +187,9 @@ module PolyId
 
       uuid_attribute = self.class.send(:polyid_uuid_attribute)
       return if public_send(uuid_attribute).present?
+      # invalid input casts to nil -- leave it for the format validation to
+      # report, rather than papering over it with a generated uuid
+      return if read_attribute_before_type_cast(uuid_attribute).present?
 
       public_send("#{uuid_attribute}=", self.class.send(:polyid_generate_uuid))
     end
@@ -207,6 +211,22 @@ module PolyId
         ids: id.present? ? [id] : [],
         uuids: uuid.present? ? [uuid] : [],
       )
+    end
+
+    # a binary column casts bad input to nil, a string column keeps it verbatim.
+    # check the value we would write, falling back to what was supplied.
+    def polyid_validate_uuid_format
+      return unless self.class.polyid?
+
+      uuid_attribute = self.class.send(:polyid_uuid_attribute)
+      # on create the value may have cast to nil, which is not a "change"
+      return unless new_record? || will_save_change_to_attribute?(uuid_attribute)
+
+      value = public_send(uuid_attribute).presence ||
+        read_attribute_before_type_cast(uuid_attribute)
+      return if value.blank?
+
+      errors.add(uuid_attribute, "is invalid") unless PolyId.is_uuid?(value)
     end
 
     def polyid_validate_uuid_immutable

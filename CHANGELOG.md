@@ -4,6 +4,7 @@
 - remove unused PolyId::Cache.read and PolyId::Cache.delete
 - translation helpers raise on models not configured with polyid
 - binary uuid columns cast invalid input to nil instead of raising
+- validate uuid format, rejecting invalid input instead of replacing it
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade
