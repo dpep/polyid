@@ -2,6 +2,19 @@ module PolyId
   module Model
     extend ActiveSupport::Concern
 
+    MEMOISED = %i[ @polyid_uuid_attribute @polyid_uuid_type_registered ].freeze
+
+    # drops resolved config so global settings apply again -- supports PolyId.reset
+    def self.reset_all!
+      return unless defined?(ActiveRecord::Base)
+
+      ActiveRecord::Base.descendants.each do |model|
+        MEMOISED.each do |ivar|
+          model.remove_instance_variable(ivar) if model.instance_variable_defined?(ivar)
+        end
+      end
+    end
+
     included do
       class_attribute :polyid_uuid_attribute_raw, instance_writer: false
       class_attribute :polyid_uuid_generator, instance_writer: false
@@ -15,6 +28,11 @@ module PolyId
 
     class_methods do
       def polyid(uuid_attribute: PolyId.default_uuid_attribute, uuid_generator: nil)
+        if defined?(@polyid_uuid_attribute)
+          raise PolyId::ConfigurationError,
+            "#{name} has already resolved its polyid config; declare `polyid` in the class body"
+        end
+
         self.polyid_uuid_attribute_raw = uuid_attribute.to_s
         self.polyid_uuid_generator = uuid_generator
       end
@@ -147,6 +165,8 @@ module PolyId
 
       def polyid_uuid_attribute
         return @polyid_uuid_attribute if defined?(@polyid_uuid_attribute)
+
+        PolyId.config_resolved!
 
         @polyid_uuid_attribute =
           if polyid_uuid_attribute_raw.present?

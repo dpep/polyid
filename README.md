@@ -157,6 +157,12 @@ You can also change which UUID column name auto-detection checks:
 PolyId.default_uuid_attribute = :public_id
 ```
 
+Both settings are baked into each model as it resolves, so they must be set
+before models are used — an initializer, not lazily. Setting them afterwards
+raises `PolyId::ConfigurationError` rather than silently doing nothing.
+`PolyId.cache`, `cache_ttl`, and `uuid_generator` are read afresh each time and
+stay settable.
+
 ### Caching
 
 PolyId caches `id <=> uuid` translations in memory by default. Lookups populate
