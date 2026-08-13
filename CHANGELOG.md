@@ -11,6 +11,8 @@
 - translation is a real read-through cache, resolving misses in one bulk write
 - loading records no longer writes to the cache.  lookups populate it instead,
   so an ordinary query no longer costs a cache write per row
+- uppercase uuids resolve, on both string and binary columns
+- STI subclasses share cached mappings with their base class
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade

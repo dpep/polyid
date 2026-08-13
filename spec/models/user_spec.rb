@@ -126,6 +126,15 @@ RSpec.describe User do
       expect(User.uuids_for([first.id, second.uuid, 999_999, nil])).to eq([first.uuid, second.uuid, nil, nil])
     end
 
+    it 'accepts uppercase uuids' do
+      user = create(:user)
+
+      expect(User.id_for(user.uuid.upcase)).to eq(user.id)
+      expect(User.ids_for([user.uuid.upcase])).to eq([user.id])
+      expect(User.find(user.uuid.upcase)).to eq(user)
+      expect(User.where(id: user.uuid.upcase)).to eq([user])
+    end
+
     it 'does not query for identity translations' do
       user = create(:user)
 
