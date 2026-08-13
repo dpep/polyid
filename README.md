@@ -100,6 +100,20 @@ config.cache_store = :redis_cache_store, {
 PolyId.cache = Rails.cache
 ```
 
+Entries expire after a month by default. Since an `id <=> uuid` mapping never
+changes, expiry only costs a re-query — but it matters operationally:
+
+```ruby
+PolyId.cache_ttl = 1.week
+PolyId.cache_ttl = nil    # never expire
+```
+
+Redis `volatile-lru`, `volatile-ttl`, and `volatile-random` only ever evict keys
+that carry a TTL, so entries written without one are never reclaimed and will
+crowd out keys that can be. Under `noeviction` — Redis's default — a full
+instance starts refusing writes instead of making room. Leave the TTL set unless
+your store is configured with an `allkeys-*` policy.
+
 ----
 ## Contributing
 

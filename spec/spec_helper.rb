@@ -5,6 +5,7 @@ require "rspec/debugging"
 require "rspec/uuid"
 require "simplecov"
 require "active_support/cache"
+require "active_support/testing/time_helpers"
 
 SimpleCov.start do
   add_filter "/spec/"
@@ -27,6 +28,8 @@ RSpec.configure do |config|
     # verify existence of stubbed methods
     mocks.verify_partial_doubles = true
   end
+
+  config.include ActiveSupport::Testing::TimeHelpers
 
   # filter gems from backtraces
   config.filter_gems_from_backtrace("rspec")

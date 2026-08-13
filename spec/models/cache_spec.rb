@@ -10,6 +10,42 @@ RSpec.describe PolyId::Cache do
     PolyId.cache.clear
   end
 
+  describe 'expiry' do
+    subject(:cached) { described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid]) }
+
+    let(:user) { create(:user) }
+
+    before { described_class.write(model_name, id: user.id, uuid: user.uuid) }
+
+    it 'caches both directions' do
+      expect(cached[:ids]).to eq(user.id => user.uuid)
+      expect(cached[:uuids]).to eq(user.uuid => user.id)
+    end
+
+    it 'keeps entries within the ttl' do
+      travel_to(PolyId.cache_ttl.from_now - 1.day) do
+        expect(cached[:ids]).to be_present
+        expect(cached[:uuids]).to be_present
+      end
+    end
+
+    it 'expires entries after the ttl' do
+      travel_to(PolyId.cache_ttl.from_now + 1.minute) do
+        expect(cached[:ids]).to be_empty
+        expect(cached[:uuids]).to be_empty
+      end
+    end
+
+    it 'can be disabled' do
+      PolyId.cache_ttl = nil
+      described_class.write(model_name, id: user.id, uuid: user.uuid)
+
+      travel_to(10.years.from_now) do
+        expect(cached[:ids]).to be_present
+      end
+    end
+  end
+
   describe '.fetch_ids' do
     it 'does not invoke the miss block when all uuids are cached' do
       user = create(:user)
