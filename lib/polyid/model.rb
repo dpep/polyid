@@ -85,7 +85,7 @@ module PolyId
         polyid_uuid_attribute.present?
       end
 
-      # translates `id: uuid` and nested `users: { id: uuid }`, polyid model or not
+      # nested conditions are translated even when this model isn't polyid
       def polyid_translate_conditions(conditions)
         translated = nil
         pk = primary_key if polyid?

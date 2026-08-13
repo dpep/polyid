@@ -18,7 +18,7 @@ module PolyId
         }
       end
 
-      # the block resolves whatever is missing, and what it resolves is cached
+      # whatever the block returns is cached
       def fetch_ids(model_name, uuids:)
         cached_ids = read_multi(model_name, uuids: uuids)[:uuids]
         missing_uuids = uuids - cached_ids.keys
