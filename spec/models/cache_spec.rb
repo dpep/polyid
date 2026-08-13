@@ -152,28 +152,27 @@ RSpec.describe PolyId::Cache do
     end
   end
 
-  describe 'query cache warming' do
-    it 'warms the translation cache when a record is loaded by query' do
+  describe 'record loads' do
+    it 'does not write to the cache' do
       user = create(:user)
       cache.clear
 
-      loaded = User.where(name: user.name).first
-
-      expect(loaded).to eq(user)
-      expect(User.id_for(user.uuid)).to eq(user.id)
-      expect(User.uuid_for(user.id)).to eq(user.uuid)
-    end
-
-    it 'writes both id and uuid entries when a record is loaded by query' do
-      user = create(:user)
-      cache.clear
-
-      User.where(id: user.id).first
+      User.where(id: user.id).to_a
 
       expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(
-        ids: { user.id => user.uuid },
-        uuids: { user.uuid => user.id },
+        ids: {},
+        uuids: {},
       )
+    end
+
+    it 'still translates, via the read-through' do
+      user = create(:user)
+      cache.clear
+
+      User.where(id: user.id).to_a
+
+      expect(User.id_for(user.uuid)).to eq(user.id)
+      expect(User.uuid_for(user.id)).to eq(user.uuid)
     end
   end
 

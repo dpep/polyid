@@ -86,7 +86,9 @@ PolyId.default_uuid_attribute = :public_id
 
 ### Caching
 
-PolyId caches `id <=> uuid` translations in memory by default. The cache is warmed automatically when records are loaded and updated.
+PolyId caches `id <=> uuid` translations in memory by default. Lookups populate
+the cache as they resolve, and saving a record caches its mapping. Loading
+records does not, so an ordinary query costs nothing extra.
 
 To improve performance, set it to a shared cache store such as Redis or `Rails.cache`.
 
