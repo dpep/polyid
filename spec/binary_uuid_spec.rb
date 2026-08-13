@@ -40,6 +40,11 @@ RSpec.describe Account do
       expect(described_class.where(uuid: [account.uuid]).first).to eq account
     end
 
+    it "accepts uppercase uuids" do
+      expect(described_class.id_for(account.uuid.upcase)).to eq account.id
+      expect(described_class.find(account.uuid.upcase)).to eq account
+    end
+
     it "translates ids and uuids through the binary-backed column" do
       expect(described_class.id_for(account.uuid)).to eq account.id
       expect(described_class.uuid_for(account.id)).to eq account.uuid

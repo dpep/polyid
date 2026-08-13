@@ -37,6 +37,11 @@ ActiveRecord::Schema.define do
   create_table :legacy_users, force: true do |t|
     t.string :name
   end
+
+  create_table :animals, force: true do |t|
+    t.string :type
+    t.string :uuid, null: false
+  end
 end
 
 class User < ActiveRecord::Base
@@ -56,4 +61,10 @@ end
 
 class LegacyUser < ActiveRecord::Base
   has_many :users
+end
+
+class Animal < ActiveRecord::Base
+end
+
+class Dog < Animal
 end

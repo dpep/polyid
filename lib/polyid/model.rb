@@ -50,19 +50,16 @@ module PolyId
       def ids_for(values)
         polyid_required!
         values = Array(values)
-        uuids = values.select { |value| PolyId.is_uuid?(value) }
+        uuids = values.filter_map { |value| polyid_normalize_uuid(value) }
 
-        resolved_uuids = PolyId::Cache.fetch_ids(name, uuids: uuids) do |missing_uuids|
+        resolved_uuids = PolyId::Cache.fetch_ids(polyid_cache_name, uuids: uuids) do |missing_uuids|
           where(polyid_uuid_attribute => missing_uuids)
             .pluck(polyid_uuid_attribute, primary_key).to_h
         end
 
         values.map do |value|
-          if PolyId.is_uuid?(value)
-            resolved_uuids[value]
-          else
-            value
-          end
+          uuid = polyid_normalize_uuid(value)
+          uuid ? resolved_uuids[uuid] : value
         end
       end
 
@@ -75,7 +72,7 @@ module PolyId
         values = Array(values)
         ids = values.reject { |value| PolyId.is_uuid?(value) || value.blank? }
 
-        resolved_ids = PolyId::Cache.fetch_uuids(name, ids: ids) do |missing_ids|
+        resolved_ids = PolyId::Cache.fetch_uuids(polyid_cache_name, ids: ids) do |missing_ids|
           where(primary_key => missing_ids)
             .pluck(primary_key, polyid_uuid_attribute).to_h
         end
@@ -111,7 +108,17 @@ module PolyId
         translated || conditions
       end
 
+      # STI subclasses share a table, so they share cached mappings
+      def polyid_cache_name
+        base_class.name
+      end
+
       private
+
+      # uuids are case insensitive; canonicalise so lookups match what is stored
+      def polyid_normalize_uuid(value)
+        value.downcase if PolyId.is_uuid?(value)
+      end
 
       def polyid_required!
         raise ArgumentError, "#{name} is not configured with polyid" unless polyid?
@@ -204,7 +211,7 @@ module PolyId
       uuid = public_send(self.class.send(:polyid_uuid_attribute))
 
       PolyId::Cache.delete_multi(
-        self.class.name,
+        self.class.polyid_cache_name,
         ids: id.present? ? [id] : [],
         uuids: uuid.present? ? [uuid] : [],
       )
@@ -245,7 +252,7 @@ module PolyId
       uuid = public_send(self.class.send(:polyid_uuid_attribute))
       return if id.blank? || uuid.blank?
 
-      PolyId::Cache.write(self.class.name, id: id, uuid: uuid)
+      PolyId::Cache.write(self.class.polyid_cache_name, id: id, uuid: uuid)
     end
   end
 end
