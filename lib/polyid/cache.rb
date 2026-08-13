@@ -18,38 +18,42 @@ module PolyId
         }
       end
 
+      # the block resolves whatever is missing, and what it resolves is cached
       def fetch_ids(model_name, uuids:)
         cached_ids = read_multi(model_name, uuids: uuids)[:uuids]
         missing_uuids = uuids - cached_ids.keys
+        return cached_ids if missing_uuids.empty?
 
-        if missing_uuids.any?
-          yielded_ids = yield(missing_uuids)
-          cached_ids.merge!(yielded_ids)
-        end
+        resolved = yield(missing_uuids) # uuid => id
+        write_multi(model_name, resolved.invert)
 
-        cached_ids
+        cached_ids.merge(resolved)
       end
 
       def fetch_uuids(model_name, ids:)
         cached_uuids = read_multi(model_name, ids: ids)[:ids]
         missing_ids = ids - cached_uuids.keys
+        return cached_uuids if missing_ids.empty?
 
-        if missing_ids.any?
-          yielded_uuids = yield(missing_ids)
-          cached_uuids.merge!(yielded_uuids)
-        end
+        resolved = yield(missing_ids) # id => uuid
+        write_multi(model_name, resolved)
 
-        cached_uuids
+        cached_uuids.merge(resolved)
       end
 
       def write(model_name, id:, uuid:)
-        PolyId.cache.write_multi(
-          {
-            id_key(model_name, id) => uuid,
-            uuid_key(model_name, uuid) => id,
-          },
-          expires_in: PolyId.cache_ttl,
-        )
+        write_multi(model_name, id => uuid)
+      end
+
+      def write_multi(model_name, mappings)
+        return if mappings.empty?
+
+        entries = mappings.each_with_object({}) do |(id, uuid), keys|
+          keys[id_key(model_name, id)] = uuid
+          keys[uuid_key(model_name, uuid)] = id
+        end
+
+        PolyId.cache.write_multi(entries, expires_in: PolyId.cache_ttl)
       end
 
       def delete_multi(model_name, ids: [], uuids: [])
