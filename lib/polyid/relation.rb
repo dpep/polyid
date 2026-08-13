@@ -1,6 +1,5 @@
 module PolyId
-  # accept UUIDs wherever the primary key is expected,
-  # eg. `account.users.find(uuid)` and `User.where(id: uuid)`
+  # accept UUIDs wherever the primary key is expected
   module Relation
     def find(*ids)
       return super if block_given?

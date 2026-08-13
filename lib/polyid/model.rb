@@ -37,8 +37,7 @@ module PolyId
         self.polyid_uuid_generator = uuid_generator
       end
 
-      # register before the schema builds its attribute set, so the decorator
-      # is applied while the column types are being resolved
+      # must register before the schema builds its attribute set
       def load_schema
         polyid_register_uuid_type
         super
@@ -104,8 +103,7 @@ module PolyId
         polyid_uuid_attribute.present?
       end
 
-      # translates UUIDs into ids, eg. `id: uuid` and `users: { id: uuid }`.
-      # nested conditions are translated even when this model isn't polyid.
+      # translates `id: uuid` and nested `users: { id: uuid }`, polyid model or not
       def polyid_translate_conditions(conditions)
         translated = nil
         pk = primary_key if polyid?
@@ -187,9 +185,7 @@ module PolyId
         false
       end
 
-      # binary UUID support.  the configured attribute name is known without the
-      # schema, and `decorate_attributes` resolves the column type lazily, so
-      # this never reads the schema it is about to load.
+      # decorates lazily, so this must not read the schema it is about to load
       def polyid_register_uuid_type
         return if @polyid_uuid_type_registered
         @polyid_uuid_type_registered = true
@@ -211,8 +207,7 @@ module PolyId
 
       uuid_attribute = self.class.send(:polyid_uuid_attribute)
       return if public_send(uuid_attribute).present?
-      # invalid input casts to nil -- leave it for the format validation to
-      # report, rather than papering over it with a generated uuid
+      # invalid input casts to nil -- let the format validation report it
       return if read_attribute_before_type_cast(uuid_attribute).present?
 
       public_send("#{uuid_attribute}=", self.class.send(:polyid_generate_uuid))
