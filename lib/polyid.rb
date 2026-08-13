@@ -21,11 +21,10 @@ module PolyId
   class ConfigurationError < StandardError; end
 
   class << self
-    # cache, cache_ttl and uuid_generator are read afresh every time, so they
-    # stay settable.  auto_detect and default_uuid_attribute get baked into each
-    # model's resolved config, so changing them later would silently do nothing.
+    # read afresh on every use, so they stay settable
     attr_writer :cache, :cache_ttl, :uuid_generator
 
+    # memoised into each model, so a late change would silently do nothing
     def auto_detect=(value)
       configurable!
       @auto_detect = value
@@ -36,7 +35,6 @@ module PolyId
       @default_uuid_attribute = value
     end
 
-    # flipped the first time a model resolves its config
     def config_resolved?
       !!@config_resolved
     end

@@ -2,13 +2,16 @@ module PolyId
   module Model
     extend ActiveSupport::Concern
 
-    # drops every model's resolved config, so global settings apply again.
-    # supports PolyId.reset; not meant for production use.
+    MEMOISED = %i[ @polyid_uuid_attribute @polyid_uuid_type_registered ].freeze
+
+    # drops resolved config so global settings apply again -- supports PolyId.reset
     def self.reset_all!
       return unless defined?(ActiveRecord::Base)
 
       ActiveRecord::Base.descendants.each do |model|
-        model.send(:polyid_reset!)
+        MEMOISED.each do |ivar|
+          model.remove_instance_variable(ivar) if model.instance_variable_defined?(ivar)
+        end
       end
     end
 
@@ -130,11 +133,6 @@ module PolyId
 
       private
 
-      def polyid_reset!
-        remove_instance_variable(:@polyid_uuid_attribute) if defined?(@polyid_uuid_attribute)
-        remove_instance_variable(:@polyid_uuid_type_registered) if defined?(@polyid_uuid_type_registered)
-      end
-
       # uuids are case insensitive; canonicalise so lookups match what is stored
       def polyid_normalize_uuid(value)
         value.downcase if PolyId.is_uuid?(value)
@@ -168,7 +166,6 @@ module PolyId
       def polyid_uuid_attribute
         return @polyid_uuid_attribute if defined?(@polyid_uuid_attribute)
 
-        # from here on, global config is baked into this model
         PolyId.config_resolved!
 
         @polyid_uuid_attribute =
