@@ -46,6 +46,34 @@ RSpec.describe PolyId::Cache do
     end
   end
 
+  describe 'read-through' do
+    let(:uuid) { SecureRandom.uuid }
+
+    it 'caches what the miss block resolves, in both directions' do
+      described_class.fetch_ids(model_name, uuids: [uuid]) { { uuid => 42 } }
+
+      cached = described_class.read_multi(model_name, ids: [42], uuids: [uuid])
+      expect(cached[:uuids]).to eq(uuid => 42)
+      expect(cached[:ids]).to eq(42 => uuid)
+    end
+
+    it 'caches uuid lookups too' do
+      described_class.fetch_uuids(model_name, ids: [42]) { { 42 => uuid } }
+
+      cached = described_class.read_multi(model_name, ids: [42], uuids: [uuid])
+      expect(cached[:ids]).to eq(42 => uuid)
+      expect(cached[:uuids]).to eq(uuid => 42)
+    end
+
+    it 'writes every resolved mapping in one call' do
+      mappings = 5.times.to_h { |i| [SecureRandom.uuid, i] }
+
+      expect(cache).to receive(:write_multi).once.and_call_original
+
+      described_class.fetch_ids(model_name, uuids: mappings.keys) { mappings }
+    end
+  end
+
   describe '.fetch_ids' do
     it 'does not invoke the miss block when all uuids are cached' do
       user = create(:user)

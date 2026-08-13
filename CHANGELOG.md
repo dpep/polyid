@@ -8,6 +8,7 @@
 - uuids are write-once, so legacy rows can be backfilled
 - remove PolyId.cache_binary_uuids
 - add PolyId.cache_ttl, defaulting to 30 days.  set to nil to never expire
+- translation is a real read-through cache, resolving misses in one bulk write
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade

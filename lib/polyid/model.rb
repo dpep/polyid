@@ -54,9 +54,8 @@ module PolyId
         uuids = values.select { |value| PolyId.is_uuid?(value) }
 
         resolved_uuids = PolyId::Cache.fetch_ids(name, uuids: uuids) do |missing_uuids|
-          where(polyid_uuid_attribute => missing_uuids).each_with_object({}) do |record, resolved|
-            resolved[record.public_send(polyid_uuid_attribute)] = record.public_send(primary_key)
-          end
+          where(polyid_uuid_attribute => missing_uuids)
+            .pluck(polyid_uuid_attribute, primary_key).to_h
         end
 
         values.map do |value|
@@ -78,9 +77,8 @@ module PolyId
         ids = values.reject { |value| PolyId.is_uuid?(value) || value.blank? }
 
         resolved_ids = PolyId::Cache.fetch_uuids(name, ids: ids) do |missing_ids|
-          where(primary_key => missing_ids).each_with_object({}) do |record, resolved|
-            resolved[record.public_send(primary_key)] = record.public_send(polyid_uuid_attribute)
-          end
+          where(primary_key => missing_ids)
+            .pluck(primary_key, polyid_uuid_attribute).to_h
         end
 
         values.map do |value|
