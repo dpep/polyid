@@ -2,7 +2,7 @@ module PolyId
   module Model
     extend ActiveSupport::Concern
 
-    MEMOISED = %i[ @polyid_uuid_attribute @polyid_uuid_type_registered ].freeze
+    MEMOISED = %i[@polyid_uuid_attribute @polyid_uuid_type_registered].freeze
 
     # drops resolved config so global settings apply again -- supports PolyId.reset
     def self.reset_all!
@@ -194,7 +194,7 @@ module PolyId
           (PolyId.default_uuid_attribute.to_s if PolyId.auto_detect?)
         return unless uuid_attribute
 
-        decorate_attributes([ uuid_attribute ]) do |_name, subtype|
+        decorate_attributes([uuid_attribute]) do |_name, subtype|
           PolyId::BinaryUuidType.new if subtype.type == :binary
         end
       end

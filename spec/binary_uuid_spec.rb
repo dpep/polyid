@@ -60,7 +60,7 @@ RSpec.describe Account do
 
       it "is rejected on create rather than silently replaced" do
         expect {
-          described_class.create!(uuid: 'garbage')
+          described_class.create!(uuid: "garbage")
         }.to raise_error(ActiveRecord::RecordInvalid, /Uuid is invalid/)
       end
 
@@ -70,7 +70,7 @@ RSpec.describe Account do
         )
 
         expect(described_class.find_by(uuid: "not-a-uuid")).to be_nil
-        expect(described_class.find_by(uuid: nil)&.name).to eq('legacy')
+        expect(described_class.find_by(uuid: nil)&.name).to eq("legacy")
       end
     end
 
@@ -79,9 +79,9 @@ RSpec.describe Account do
     context "when the first touch is a query" do
       let(:cold_model) do
         Class.new(ActiveRecord::Base) do
-          self.table_name = 'accounts'
+          self.table_name = "accounts"
 
-          def self.name = 'ColdAccount'
+          def self.name = "ColdAccount"
         end
       end
 

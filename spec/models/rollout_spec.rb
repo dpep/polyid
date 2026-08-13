@@ -44,12 +44,12 @@ RSpec.describe "polyid rollout" do
 
     it "rejects an invalid uuid" do
       expect {
-        account.update!(uuid: 'garbage')
+        account.update!(uuid: "garbage")
       }.to raise_error(ActiveRecord::RecordInvalid, /invalid/)
     end
 
     it "can still be saved while awaiting one" do
-      account.update!(name: 'renamed')
+      account.update!(name: "renamed")
 
       expect(account.reload.uuid).to be_nil
     end

@@ -12,15 +12,15 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = ">= 3.3"
 
-  s.add_dependency 'activerecord', '>= 7.2'
+  s.add_dependency "activerecord", ">= 7.2"
 
-  s.add_development_dependency 'debug', '>= 1'
-  s.add_development_dependency 'factory_bot', '>= 6'
-  s.add_development_dependency 'faker', '>= 3'
-  s.add_development_dependency 'rake', '>= 13'
-  s.add_development_dependency 'rspec', '>= 3.10'
-  s.add_development_dependency 'rspec-debugging'
-  s.add_development_dependency 'rspec-uuid', '>= 0.6'
-  s.add_development_dependency 'simplecov', '>= 0.22'
-  s.add_development_dependency 'sqlite3', '>= 1.4'
+  s.add_development_dependency "debug", ">= 1"
+  s.add_development_dependency "factory_bot", ">= 6"
+  s.add_development_dependency "faker", ">= 3"
+  s.add_development_dependency "rake", ">= 13"
+  s.add_development_dependency "rspec", ">= 3.10"
+  s.add_development_dependency "rspec-debugging"
+  s.add_development_dependency "rspec-uuid", ">= 0.6"
+  s.add_development_dependency "simplecov", ">= 0.22"
+  s.add_development_dependency "sqlite3", ">= 1.4"
 end
