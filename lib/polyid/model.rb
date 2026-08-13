@@ -9,7 +9,6 @@ module PolyId
       before_validation :polyid_assign_uuid, on: :create
       validate :polyid_validate_uuid_format
       validate :polyid_validate_uuid_immutable
-      after_find :polyid_warm_cache
       after_save :polyid_warm_cache
       after_destroy :polyid_evict_cache
     end
