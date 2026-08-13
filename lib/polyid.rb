@@ -25,10 +25,7 @@ module PolyId
       @cache ||= ActiveSupport::Cache::MemoryStore.new
     end
 
-    # nil disables expiry.  note that redis `volatile-*` eviction policies only
-    # ever evict keys that carry a ttl, so without one these entries are never
-    # reclaimed -- and under `noeviction`, the default, a full instance starts
-    # refusing writes rather than making room.
+    # nil disables expiry.  redis volatile-* policies only evict keys with a ttl
     def cache_ttl
       instance_variable_defined?(:@cache_ttl) ? @cache_ttl : DEFAULT_CACHE_TTL
     end
