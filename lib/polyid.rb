@@ -3,6 +3,7 @@ require "active_support/cache"
 require "active_support/concern"
 require "active_support/core_ext/object/blank"
 require "active_support/core_ext/class/attribute"
+require "active_support/core_ext/numeric/time"
 require "active_support/core_ext/string/inflections"
 require "active_support/lazy_load_hooks"
 require "securerandom"
@@ -15,18 +16,28 @@ require "polyid/version"
 
 module PolyId
   UUID_PATTERN = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/i
+  DEFAULT_CACHE_TTL = 30.days
 
   class << self
-    attr_writer :cache, :uuid_generator, :auto_detect, :default_uuid_attribute
+    attr_writer :cache, :cache_ttl, :uuid_generator, :auto_detect, :default_uuid_attribute
 
     def cache
       @cache ||= ActiveSupport::Cache::MemoryStore.new
+    end
+
+    # nil disables expiry.  note that redis `volatile-*` eviction policies only
+    # ever evict keys that carry a ttl, so without one these entries are never
+    # reclaimed -- and under `noeviction`, the default, a full instance starts
+    # refusing writes rather than making room.
+    def cache_ttl
+      instance_variable_defined?(:@cache_ttl) ? @cache_ttl : DEFAULT_CACHE_TTL
     end
 
     def reset
       @cache&.clear if instance_variable_defined?(:@cache)
 
       remove_instance_variable(:@cache) if instance_variable_defined?(:@cache)
+      remove_instance_variable(:@cache_ttl) if instance_variable_defined?(:@cache_ttl)
       remove_instance_variable(:@uuid_generator) if instance_variable_defined?(:@uuid_generator)
       remove_instance_variable(:@auto_detect) if instance_variable_defined?(:@auto_detect)
       remove_instance_variable(:@default_uuid_attribute) if instance_variable_defined?(:@default_uuid_attribute)

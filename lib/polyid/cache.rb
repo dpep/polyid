@@ -44,8 +44,11 @@ module PolyId
 
       def write(model_name, id:, uuid:)
         PolyId.cache.write_multi(
-          id_key(model_name, id) => uuid,
-          uuid_key(model_name, uuid) => id,
+          {
+            id_key(model_name, id) => uuid,
+            uuid_key(model_name, uuid) => id,
+          },
+          expires_in: PolyId.cache_ttl,
         )
       end
 

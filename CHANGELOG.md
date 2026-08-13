@@ -7,6 +7,7 @@
 - validate uuid format, rejecting invalid input instead of replacing it
 - uuids are write-once, so legacy rows can be backfilled
 - remove PolyId.cache_binary_uuids
+- add PolyId.cache_ttl, defaulting to 30 days.  set to nil to never expire
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade
