@@ -1,23 +1,12 @@
 RSpec.describe 'auto-detection' do
-  def reset_polyid_auto_detection_state(model)
-    model.remove_instance_variable(:@polyid_uuid_attribute) if model.instance_variable_defined?(:@polyid_uuid_attribute)
-  end
-
   around do |example|
-    previous_auto_detect = PolyId.auto_detect?
-    previous_uuid_attribute = PolyId.default_uuid_attribute
-
+    PolyId.reset
     PolyId.auto_detect = true
     PolyId.default_uuid_attribute = :uuid
-    reset_polyid_auto_detection_state(User)
-    reset_polyid_auto_detection_state(LegacyUser)
 
     example.run
   ensure
-    PolyId.auto_detect = previous_auto_detect
-    PolyId.default_uuid_attribute = previous_uuid_attribute
-    reset_polyid_auto_detection_state(User)
-    reset_polyid_auto_detection_state(LegacyUser)
+    PolyId.reset
   end
 
   it 'automatically enables polyid behavior for models with id and uuid columns' do

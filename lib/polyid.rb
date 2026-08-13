@@ -18,8 +18,32 @@ module PolyId
   UUID_PATTERN = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/i
   DEFAULT_CACHE_TTL = 30.days
 
+  class ConfigurationError < StandardError; end
+
   class << self
-    attr_writer :cache, :cache_ttl, :uuid_generator, :auto_detect, :default_uuid_attribute
+    # cache, cache_ttl and uuid_generator are read afresh every time, so they
+    # stay settable.  auto_detect and default_uuid_attribute get baked into each
+    # model's resolved config, so changing them later would silently do nothing.
+    attr_writer :cache, :cache_ttl, :uuid_generator
+
+    def auto_detect=(value)
+      configurable!
+      @auto_detect = value
+    end
+
+    def default_uuid_attribute=(value)
+      configurable!
+      @default_uuid_attribute = value
+    end
+
+    # flipped the first time a model resolves its config
+    def config_resolved?
+      !!@config_resolved
+    end
+
+    def config_resolved!
+      @config_resolved = true
+    end
 
     def cache
       @cache ||= ActiveSupport::Cache::MemoryStore.new
@@ -41,6 +65,9 @@ module PolyId
       remove_instance_variable(:@uuid_generator) if instance_variable_defined?(:@uuid_generator)
       remove_instance_variable(:@auto_detect) if instance_variable_defined?(:@auto_detect)
       remove_instance_variable(:@default_uuid_attribute) if instance_variable_defined?(:@default_uuid_attribute)
+      remove_instance_variable(:@config_resolved) if instance_variable_defined?(:@config_resolved)
+
+      PolyId::Model.reset_all!
     end
 
     def uuid_generator
@@ -68,6 +95,13 @@ module PolyId
 
     def default_uuid_attribute
       @default_uuid_attribute ||= "uuid"
+    end
+
+    def configurable!
+      return unless config_resolved?
+
+      raise ConfigurationError,
+        "polyid is already in use; configure it in an initializer, before models are loaded"
     end
 
     def is_uuid?(value)

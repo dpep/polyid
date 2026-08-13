@@ -1,4 +1,6 @@
 ###  Unreleased
+- configuring auto_detect or default_uuid_attribute after models load now raises
+  instead of silently doing nothing.  set them in an initializer
 - uuid lookups via relations and associations
 - require activerecord >= 7.2
 - remove unused PolyId::Cache.read and PolyId::Cache.delete
