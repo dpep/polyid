@@ -28,43 +28,54 @@ RSpec.describe "polyid:backfill" do
     Rake.application = original_application
   end
 
-  it "backfills missing binary uuids for a model" do
-    existing_uuid = SecureRandom.uuid
-    missing_account = Account.create!(name: "Missing UUID")
-    existing_account = Account.create!(name: "Existing UUID", uuid: existing_uuid)
+  # create! assigns a uuid, so a row that predates polyid has to be made by
+  # clearing the column behind the callbacks
+  def strip_uuid(record, attribute = :uuid)
+    record.update_columns(attribute => nil)
+    record.reload
+  end
+
+  it "backfills a row with no uuid" do
+    account = strip_uuid(Account.create!(name: "Legacy"))
+    expect(account.uuid).to be_nil
 
     task.invoke("Account")
 
-    expect(missing_account.reload.uuid).to be_a_uuid
-    expect(raw_account_uuid(missing_account).bytesize).to eq(16)
-    expect(existing_account.reload.uuid).to eq existing_uuid
-    expect(raw_account_uuid(existing_account).bytesize).to eq(16)
+    expect(account.reload.uuid).to be_a_uuid
+    expect(raw_account_uuid(account).bytesize).to eq(16)
   end
 
-  it "preserves existing uuids while backfilling missing ones" do
-    existing_uuid = SecureRandom.uuid
-    missing_account = Account.create!(name: "Missing UUID")
-    existing_account = Account.create!(name: "Existing UUID", uuid: existing_uuid)
+  it "leaves existing uuids alone" do
+    account = Account.create!(name: "Existing")
+    original_uuid = account.uuid
+    strip_uuid(Account.create!(name: "Legacy"))
 
     task.invoke("Account")
 
-    expect(missing_account.reload.uuid).to be_a_uuid
-    expect(raw_account_uuid(missing_account).bytesize).to eq(16)
-    expect(existing_account.reload.uuid).to eq existing_uuid
-    expect(raw_account_uuid(existing_account).bytesize).to eq(16)
+    expect(account.reload.uuid).to eq original_uuid
   end
 
-  it "backfills missing string uuids for a custom uuid attribute" do
-    existing_uuid = SecureRandom.uuid
-    missing_widget = Widget.create!(name: "Missing UUID", public_id: nil)
-    existing_widget = Widget.create!(name: "Existing UUID", public_id: existing_uuid)
+  it "backfills a custom uuid attribute" do
+    widget = strip_uuid(Widget.create!(name: "Legacy"), :public_id)
+    expect(widget.public_id).to be_nil
 
     task.invoke("Widget")
 
-    expect(missing_widget.reload.public_id).to be_a_uuid
-    expect(raw_widget_uuid(missing_widget)).to eq(missing_widget.public_id)
-    expect(raw_widget_uuid(missing_widget).bytesize).to eq(36)
-    expect(existing_widget.reload.public_id).to eq(existing_uuid)
-    expect(raw_widget_uuid(existing_widget)).to eq(existing_uuid)
+    expect(widget.reload.public_id).to be_a_uuid
+    expect(raw_widget_uuid(widget)).to eq(widget.public_id)
+  end
+
+  it "accepts a batch size" do
+    3.times { |i| strip_uuid(Account.create!(name: "Legacy #{i}")) }
+
+    task.invoke("Account", "uuid", "2")
+
+    expect(Account.where(uuid: nil)).to be_empty
+  end
+
+  it "raises for a model without polyid" do
+    expect {
+      task.invoke("LegacyUser")
+    }.to raise_error(ArgumentError, /not configured with polyid/)
   end
 end

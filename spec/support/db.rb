@@ -18,19 +18,19 @@ end
 ActiveRecord::Schema.define do
   create_table :users, force: true do |t|
     t.string :name
-    t.string :uuid, null: false
+    t.string :uuid, null: false, index: { unique: true }
     t.references :account
     t.references :legacy_user
   end
 
   create_table :accounts, force: true do |t|
     t.string :name
-    t.binary :uuid, limit: 16
+    t.binary :uuid, limit: 16, index: { unique: true }
   end
 
   create_table :widgets, force: true do |t|
     t.string :name
-    t.string :public_id
+    t.string :public_id, index: { unique: true }
     t.references :owner, polymorphic: true
   end
 
@@ -40,7 +40,7 @@ ActiveRecord::Schema.define do
 
   create_table :animals, force: true do |t|
     t.string :type
-    t.string :uuid, null: false
+    t.string :uuid, null: false, index: { unique: true }
   end
 end
 
