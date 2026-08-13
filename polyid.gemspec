@@ -3,7 +3,7 @@ require_relative "lib/polyid/version"
 Gem::Specification.new do |s|
   s.authors     = ["Daniel Pepper"]
   s.description = "Use ID and UUID keys interchangeably"
-  s.files       = `git ls-files * ':!:spec'`.split("\n")
+  s.files       = Dir["lib/**/*.{rb,rake}"] + %w[CHANGELOG.md LICENSE.txt README.md]
   s.homepage    = "https://github.com/dpep/polyid"
   s.license     = "MIT"
   s.name        = "polyid"

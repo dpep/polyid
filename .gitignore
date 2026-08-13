@@ -1,3 +1,5 @@
 *.gem
 .byebug_history
+checksums
 coverage
+pkg
