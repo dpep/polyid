@@ -68,6 +68,79 @@ class Account < ApplicationRecord
 end
 ```
 
+### Schema
+
+Give the UUID column a unique index. Lookups query it directly, so without one
+every translation is a full table scan, and duplicate UUIDs would resolve
+arbitrarily.
+
+```ruby
+add_column :users, :uuid, :string
+add_index :users, :uuid, unique: true
+```
+
+A UUID can also be stored as 16 raw bytes instead of a 36 character string,
+which is roughly half the size and indexes more tightly:
+
+```ruby
+add_column :accounts, :uuid, :binary, limit: 16
+add_index :accounts, :uuid, unique: true
+```
+
+PolyId notices the column type and handles the conversion, so you keep passing
+and reading ordinary dashed UUID strings either way:
+
+```ruby
+account.uuid                              # => "8f47a7ca-8f4a-4d7b-96e6-60a0b47ddf68"
+Account.where(uuid: account.uuid).first   # => #<Account ...>
+```
+
+### Rolling out to an existing table
+
+Add the column as nullable, backfill, then enforce:
+
+```ruby
+add_column :users, :uuid, :string
+add_index :users, :uuid, unique: true
+```
+
+New records get a UUID automatically. Existing rows are backfilled with a rake
+task, which writes in batches and skips validations and callbacks:
+
+```sh
+rake polyid:backfill[User]
+rake polyid:backfill[User,uuid,5000]   # explicit column and batch size
+```
+
+UUIDs are write-once. A row that has none can still be given one — so a
+half-migrated table keeps working — but once set it cannot be changed:
+
+```ruby
+user.update!(uuid: SecureRandom.uuid)   # ok when the column was NULL
+user.update!(uuid: SecureRandom.uuid)   # ActiveRecord::RecordInvalid, immutable
+```
+
+Values that are not UUIDs are rejected rather than quietly replaced:
+
+```ruby
+User.create!(uuid: "nope")   # ActiveRecord::RecordInvalid, invalid
+```
+
+### UUID generation
+
+PolyId generates v7 UUIDs when Ruby supports them, falling back to v4. v7 is
+time-ordered, which keeps inserts near the end of the index rather than
+scattered across it. Override globally or per model:
+
+```ruby
+PolyId.uuid_generator = :v4
+PolyId.uuid_generator = -> { MyIdService.next }
+
+class Account < ApplicationRecord
+  polyid uuid_generator: :v4
+end
+```
+
 ### Auto-detection
 
 By default, PolyId automatically enables translation helpers for models that
