@@ -101,7 +101,7 @@ module PolyId
         end
       end
 
-      # hot path: a nil check, since present? would regex-match the string
+      # .present? would regex-match the string
       def polyid?
         !polyid_uuid_attribute.nil?
       end
