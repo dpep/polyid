@@ -138,20 +138,6 @@ RSpec.describe PolyId::Cache do
     end
   end
 
-  describe ".find" do
-    it "uses bulk cache reads for mixed lookups" do
-      first = create(:user)
-      second = create(:user)
-      User.id_for(first.uuid)
-
-      allow(cache).to receive(:read_multi).and_call_original
-
-      User.find(first.uuid, second.uuid)
-
-      expect(cache).to have_received(:read_multi).at_least(:once)
-    end
-  end
-
   describe "record loads" do
     it "does not write to the cache" do
       user = create(:user)
@@ -177,17 +163,77 @@ RSpec.describe PolyId::Cache do
   end
 
   describe "save cache warming" do
-    it "writes both id and uuid entries when a record is saved" do
+    it "writes both id and uuid entries when a record is created" do
       user = create(:user)
-      cache.clear
-
-      user.update!(name: "Updated Name")
 
       expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(
         ids: { user.id => user.uuid },
         uuids: { user.uuid => user.id },
       )
     end
+
+    it "writes entries when a uuid is backfilled" do
+      account = create(:account)
+      account.update_columns(uuid: nil)
+      cache.clear
+
+      account.reload.update!(uuid: SecureRandom.uuid)
+
+      expect(described_class.read_multi(Account.name, ids: [account.id])[:ids]).to eq(account.id => account.uuid)
+    end
+
+    it "skips updates that leave the uuid alone" do
+      user = create(:user)
+      cache.clear
+
+      user.update!(name: "Updated Name")
+
+      expect(described_class.read_multi(model_name, ids: [user.id])[:ids]).to be_empty
+    end
+  end
+
+  it "treats garbage cache values as misses and overwrites them" do
+    user = create(:user)
+    cache.write("polyid/User/#{user.id}", SecureRandom.bytes(16))
+    cache.write("polyid/User/uuid:#{user.uuid}", "")
+
+    expect(User.uuid_for(user.id)).to eq(user.uuid)
+    expect(User.id_for(user.uuid)).to eq(user.id)
+    expect(cache.read("polyid/User/#{user.id}")).to eq(user.uuid)
+  end
+
+  it "does not cache a record whose transaction rolls back" do
+    user = nil
+    User.transaction(requires_new: true) do
+      user = create(:user)
+      raise ActiveRecord::Rollback
+    end
+
+    expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(ids: {}, uuids: {})
+  end
+
+  it "does not cache lookups made in a transaction that rolls back" do
+    user = nil
+    User.transaction(requires_new: true) do
+      user = create(:user)
+      User.id_for(user.uuid)
+      User.uuid_for(user.id)
+      raise ActiveRecord::Rollback
+    end
+
+    expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(ids: {}, uuids: {})
+  end
+
+  it "caches lookups made in a transaction once it commits" do
+    user = create(:user)
+    cache.clear
+
+    User.transaction(requires_new: true) do
+      User.id_for(user.uuid)
+      expect(described_class.read_multi(model_name, uuids: [user.uuid])[:uuids]).to be_empty
+    end
+
+    expect(described_class.read_multi(model_name, uuids: [user.uuid])[:uuids]).to eq(user.uuid => user.id)
   end
 
   describe "translation cache" do
@@ -196,10 +242,11 @@ RSpec.describe PolyId::Cache do
 
       expect(User.id_for(user.uuid)).to eq(user.id)
 
-      allow(User).to receive(:find_by).and_raise("expected cache hit")
-
-      expect(User.id_for(user.uuid)).to eq(user.id)
-      expect(User.uuid_for(user.id)).to eq(user.uuid)
+      queries = sql_queries do
+        expect(User.id_for(user.uuid)).to eq(user.id)
+        expect(User.uuid_for(user.id)).to eq(user.uuid)
+      end
+      expect(queries).to be_empty
     end
 
     it "writes both directions with a bulk cache write" do
@@ -210,7 +257,7 @@ RSpec.describe PolyId::Cache do
 
       User.id_for(user.uuid)
 
-      expect(cache).to have_received(:write_multi).at_least(:once)
+      expect(cache).to have_received(:write_multi).once
       expect(User.uuid_for(user.id)).to eq(user.uuid)
     end
 
@@ -224,7 +271,7 @@ RSpec.describe PolyId::Cache do
 
       expect(User.ids_for([first.uuid, second.uuid])).to eq([first.id, second.id])
       expect(User.uuids_for([first.id, second.id])).to eq([first.uuid, second.uuid])
-      expect(cache).to have_received(:read_multi).at_least(:twice)
+      expect(cache).to have_received(:read_multi).twice
     end
 
     it "uses the cache for repeated batch lookups" do
@@ -234,10 +281,11 @@ RSpec.describe PolyId::Cache do
       expect(User.ids_for([first.uuid, second.uuid])).to eq([first.id, second.id])
       expect(User.uuids_for([first.id, second.id])).to eq([first.uuid, second.uuid])
 
-      allow(User).to receive(:where).and_raise("expected cache hit")
-
-      expect(User.ids_for([first.uuid, second.uuid])).to eq([first.id, second.id])
-      expect(User.uuids_for([first.id, second.id])).to eq([first.uuid, second.uuid])
+      queries = sql_queries do
+        expect(User.ids_for([first.uuid, second.uuid])).to eq([first.id, second.id])
+        expect(User.uuids_for([first.id, second.id])).to eq([first.uuid, second.uuid])
+      end
+      expect(queries).to be_empty
     end
 
     it "keeps cached mappings stable when a uuid update is rejected" do

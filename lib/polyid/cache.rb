@@ -1,5 +1,7 @@
 module PolyId
   module Cache
+    IMMEDIATELY = ->(&write) { write.call }
+
     class << self
       def read_multi(model_name, ids: [], uuids: [])
         id_keys = ids.to_h { |id| [id, id_key(model_name, id)] }
@@ -8,35 +10,36 @@ module PolyId
 
         cached = PolyId.cache.read_multi(*keys)
 
+        # a garbage value (eg. 0.2.0's packed binary uuids) is a miss, so it gets overwritten
         {
           ids: id_keys.each_with_object({}) do |(id, cache_key), values|
-            values[id] = cached[cache_key] if cached.key?(cache_key)
+            values[id] = cached[cache_key] if PolyId.uuid?(cached[cache_key])
           end,
           uuids: uuid_keys.each_with_object({}) do |(uuid, cache_key), values|
-            values[uuid] = cached[cache_key] if cached.key?(cache_key)
+            values[uuid] = cached[cache_key] if valid_id?(cached[cache_key])
           end,
         }
       end
 
-      # whatever the block returns is cached
-      def fetch_ids(model_name, uuids:)
-        cached_ids = read_multi(model_name, uuids: uuids)[:uuids]
+      # whatever the block returns is cached, with the write wrapped by `defer`
+      def fetch_ids(model_name, uuids:, defer: IMMEDIATELY)
+        cached_ids = read_multi(model_name, uuids:)[:uuids]
         missing_uuids = uuids - cached_ids.keys
         return cached_ids if missing_uuids.empty?
 
         resolved = yield(missing_uuids) # uuid => id
-        write_multi(model_name, resolved.invert)
+        defer.call { write_multi(model_name, resolved.invert) }
 
         cached_ids.merge(resolved)
       end
 
-      def fetch_uuids(model_name, ids:)
-        cached_uuids = read_multi(model_name, ids: ids)[:ids]
+      def fetch_uuids(model_name, ids:, defer: IMMEDIATELY)
+        cached_uuids = read_multi(model_name, ids:)[:ids]
         missing_ids = ids - cached_uuids.keys
         return cached_uuids if missing_ids.empty?
 
         resolved = yield(missing_ids) # id => uuid
-        write_multi(model_name, resolved)
+        defer.call { write_multi(model_name, resolved) }
 
         cached_uuids.merge(resolved)
       end
@@ -64,6 +67,10 @@ module PolyId
       end
 
       private
+
+      def valid_id?(value)
+        value.is_a?(Integer) || (value.is_a?(String) && value.present?)
+      end
 
       def id_key(model_name, id)
         "polyid/#{model_name}/#{id}"

@@ -37,7 +37,7 @@ RSpec.describe "polyid rollout" do
 
     it "accepts a uuid" do
       uuid = SecureRandom.uuid
-      account.update!(uuid: uuid)
+      account.update!(uuid:)
 
       expect(account.reload.uuid).to eq(uuid)
     end
@@ -67,10 +67,6 @@ RSpec.describe "polyid rollout" do
     subject(:widget) { create(:widget) }
 
     it "supports a custom uuid attribute" do
-      expect(widget.public_id).to eq("00000000-0000-7000-8000-000000000001")
-    end
-
-    it "allows a model-specific generator override" do
       expect(widget.public_id).to eq("00000000-0000-7000-8000-000000000001")
     end
 

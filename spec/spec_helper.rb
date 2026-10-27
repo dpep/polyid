@@ -8,7 +8,7 @@ require "active_support/cache"
 require "active_support/testing/time_helpers"
 
 SimpleCov.start do
-  add_filter "/spec/"
+  skip "/spec/"
 end
 
 if ENV["CI"] == "true" || ENV["CODECOV_TOKEN"]
@@ -16,9 +16,7 @@ if ENV["CI"] == "true" || ENV["CODECOV_TOKEN"]
   SimpleCov.formatter = SimpleCov::Formatter::JSONFormatter
 end
 
-# load this gem
-gem_name = Dir.glob("*.gemspec")[0].split(".")[0]
-require gem_name
+require "polyid"
 
 RSpec.configure do |config|
   # allow "fit" examples

@@ -17,6 +17,7 @@ require "polyid/version"
 module PolyId
   UUID_PATTERN = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/i
   DEFAULT_CACHE_TTL = 30.days
+  CONFIG_IVARS = %i[@cache @cache_ttl @uuid_generator @auto_detect @default_uuid_attribute @config_resolved].freeze
 
   class ConfigurationError < StandardError; end
 
@@ -53,20 +54,16 @@ module PolyId
     end
 
     def reset
-      @cache&.clear if instance_variable_defined?(:@cache)
-
-      remove_instance_variable(:@cache) if instance_variable_defined?(:@cache)
-      remove_instance_variable(:@cache_ttl) if instance_variable_defined?(:@cache_ttl)
-      remove_instance_variable(:@uuid_generator) if instance_variable_defined?(:@uuid_generator)
-      remove_instance_variable(:@auto_detect) if instance_variable_defined?(:@auto_detect)
-      remove_instance_variable(:@default_uuid_attribute) if instance_variable_defined?(:@default_uuid_attribute)
-      remove_instance_variable(:@config_resolved) if instance_variable_defined?(:@config_resolved)
+      # drop the store rather than clear it: it may be shared, eg. Rails.cache
+      CONFIG_IVARS.each do |ivar|
+        remove_instance_variable(ivar) if instance_variable_defined?(ivar)
+      end
 
       PolyId::Model.reset_all!
     end
 
     def uuid_generator
-      @uuid_generator ||= SecureRandom.respond_to?(:uuid_v7) ? :v7 : :v4
+      @uuid_generator ||= :v7
     end
 
     def generate_uuid(generator = nil)
@@ -99,7 +96,7 @@ module PolyId
         "polyid is already in use; configure it in an initializer, before models are loaded"
     end
 
-    def is_uuid?(value)
+    def uuid?(value)
       return false unless value.is_a?(String) && UUID_PATTERN.match?(value)
 
       version = value.getbyte(14).chr.to_i(16)
@@ -107,6 +104,7 @@ module PolyId
 
       version.between?(1, 8) && variant.between?(8, 11)
     end
+    alias is_uuid? uuid?
   end
 end
 

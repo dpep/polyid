@@ -1,6 +1,6 @@
 RSpec.describe "relation lookups" do
   let(:account) { create(:account) }
-  let(:user) { create(:user, account: account) }
+  let(:user) { create(:user, account:) }
 
   describe "#find" do
     it "finds by uuid through a relation" do
@@ -18,7 +18,7 @@ RSpec.describe "relation lookups" do
     end
 
     it "accepts ids, uuids, and a mix of both" do
-      other = create(:user, account: account)
+      other = create(:user, account:)
 
       expect(account.users.find(user.id, other.uuid)).to eq([user, other])
       expect(account.users.find([user.uuid, other.id])).to eq([user, other])
@@ -35,7 +35,14 @@ RSpec.describe "relation lookups" do
     it "raises when the uuid does not exist" do
       expect {
         User.all.find(UNKNOWN_UUID)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      }.to raise_error(ActiveRecord::RecordNotFound, /=#{Regexp.escape(UNKNOWN_UUID)}/)
+    end
+
+    it "resolves uuids outside the default scope" do
+      stub_const("ScopedUser", Class.new(User) { default_scope { where.not(name: "hidden") } })
+      hidden = ScopedUser.create!(name: "hidden")
+
+      expect(ScopedUser.unscoped.find(hidden.uuid)).to eq(hidden)
     end
 
     it "still yields to the block form" do
@@ -67,6 +74,28 @@ RSpec.describe "relation lookups" do
 
     it "returns nothing when the uuid does not exist" do
       expect(User.where(id: UNKNOWN_UUID)).to be_empty
+    end
+
+    it "accepts table-qualified keys" do
+      expect(User.where("users.id" => user.uuid)).to eq([user])
+      expect(User.joins(:account).where("accounts.id" => account.uuid)).to eq([user])
+    end
+
+    it "translates foreign keys and belongs_to associations" do
+      # v7 uuids start "01", which an untranslated integer cast reads as id 1
+      account = create(:account, id: 42)
+      user = create(:user, account:)
+
+      expect(User.where(account_id: account.uuid)).to eq([user])
+      expect(User.where(account: account.uuid)).to eq([user])
+    end
+
+    it "accepts a set" do
+      expect(User.where(id: Set[user.uuid])).to eq([user])
+    end
+
+    it "ignores surrounding whitespace" do
+      expect(User.where(id: " #{user.uuid}\n")).to eq([user])
     end
 
     it "supports find_by" do

@@ -15,6 +15,28 @@
   so an ordinary query no longer costs a cache write per row
 - uppercase uuids resolve, on both string and binary columns
 - STI subclasses share cached mappings with their base class
+- uuids written in uppercase to a string column are stored lowercase, so
+  lookups find them.  rows already stored in uppercase need a one-off downcase
+- garbage cache values, including 0.2.0's packed binary uuids, are treated as
+  misses and overwritten
+- the cache is written after commit, so a rolled back record is never cached,
+  including by a lookup made inside the transaction
+- saving a record only writes the cache when it gains a uuid, not on every update
+- `PolyId.is_uuid?` is renamed `PolyId.uuid?`.  `is_uuid?` remains as an alias
+- `rake polyid:backfill` drops its `uuid_attribute` argument and always fills
+  the model's polyid column: `rake "polyid:backfill[User,5000]"`
+- uuid-shaped values that are not valid uuids no longer fall through to an
+  integer id lookup
+- `uuid_for` casts string ids, so `uuid_for(params[:id])` works on a cold cache
+- uuid lookups ignore default scopes; the outer query still applies them
+- `PolyId.reset` no longer clears the configured cache store
+- a binary `uuid` primary key is left alone rather than cast as a polyid uuid
+- uuids are translated in table-qualified keys (`"users.id"`), foreign keys
+  (`account_id:`), belongs_to associations (`account:`), and sets, and
+  surrounding whitespace is ignored
+- `find` with an unknown uuid names it in the RecordNotFound message
+- backfill rejects invalid generated uuids and never overwrites one assigned
+  while it runs
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade

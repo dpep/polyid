@@ -13,10 +13,6 @@ RSpec.describe "polyid:backfill" do
     Widget.connection.select_value(Widget.where(id: widget.id).select(:public_id).to_sql)
   end
 
-  before do
-    task.reenable
-  end
-
   around do |example|
     original_application = Rake.application
     Rake.application = Rake::Application.new
@@ -68,9 +64,18 @@ RSpec.describe "polyid:backfill" do
   it "accepts a batch size" do
     3.times { |i| strip_uuid(Account.create!(name: "Legacy #{i}")) }
 
-    task.invoke("Account", "uuid", "2")
+    task.invoke("Account", "2")
 
     expect(Account.where(uuid: nil)).to be_empty
+  end
+
+  it "refuses to write an invalid generated uuid" do
+    strip_uuid(Account.create!(name: "Legacy"))
+    allow(Account).to receive(:polyid_generate_uuid).and_return("nope")
+
+    expect {
+      task.invoke("Account")
+    }.to raise_error(ArgumentError, /invalid uuid/)
   end
 
   it "raises for a model without polyid" do

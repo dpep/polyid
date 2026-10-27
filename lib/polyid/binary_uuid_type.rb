@@ -35,7 +35,7 @@ module PolyId
 
     def normalize_uuid(value)
       uuid = value.to_s
-      uuid if PolyId.is_uuid?(uuid)
+      uuid if PolyId.uuid?(uuid)
     end
 
     def pack_uuid(uuid)

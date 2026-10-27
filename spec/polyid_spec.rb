@@ -2,31 +2,43 @@ RSpec.describe PolyId do
   describe ".reset" do
     it "clears cache configuration back to defaults" do
       expect(described_class.cache).to be_a(ActiveSupport::Cache::NullStore)
-      described_class.cache.write("abc", 123)
       described_class.default_uuid_attribute = :public_id
 
       described_class.reset
 
       expect(described_class.cache).to be_a(ActiveSupport::Cache::MemoryStore)
-      expect(described_class.cache).to be_empty
       expect(described_class.default_uuid_attribute).to eq("uuid")
+    end
+
+    it "leaves a shared cache store's contents alone" do
+      shared = ActiveSupport::Cache::MemoryStore.new
+      shared.write("app", 1)
+      described_class.cache = shared
+
+      described_class.reset
+
+      expect(shared.read("app")).to eq(1)
     end
   end
 
-    describe ".is_uuid?" do
-      subject(:is_uuid?) { described_class.is_uuid?(value) }
+  describe ".uuid?" do
+    subject(:uuid?) { described_class.uuid?(value) }
 
-      context "with a dashed hexadecimal uuid" do
-        let(:value) { SecureRandom.uuid }
+    it "is aliased as is_uuid?" do
+      expect(described_class.is_uuid?(SecureRandom.uuid)).to be true
+    end
 
-        it { is_expected.to be true }
-      end
+    context "with a dashed hexadecimal uuid" do
+      let(:value) { SecureRandom.uuid }
 
-      context "with an undashed hexadecimal uuid" do
-        let(:value) { SecureRandom.uuid.delete("-") }
+      it { is_expected.to be true }
+    end
 
-        it { is_expected.to be false }
-      end
+    context "with an undashed hexadecimal uuid" do
+      let(:value) { SecureRandom.uuid.delete("-") }
+
+      it { is_expected.to be false }
+    end
 
     context "with a non-uuid string" do
       let(:value) { "abc" }

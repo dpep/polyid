@@ -38,22 +38,26 @@ User.find(user.id, user.uuid)
 User.find([user.uuid, user.id])
 ```
 
-UUIDs work anywhere the primary key is expected, including through relations and
-associations:
+UUIDs work anywhere the primary key is expected, including through relations,
+associations, and foreign keys:
 
 ```ruby
 User.where(id: user.uuid)
 User.find_by(id: user.uuid)
 User.where.not(id: user.uuid)
+User.where("users.id" => user.uuid)
 
 account.users.find(user.uuid)
 account.users.where(id: user.uuid)
+
+User.where(account_id: account.uuid)
+User.where(account: account.uuid)
 ```
 
 Scopes are still enforced, so `account.users.find(uuid)` raises
 `ActiveRecord::RecordNotFound` for a user belonging to another account.
 
-Translation helpers preserve input order and return `nil` for misses:
+Translation helpers preserve input order and return `nil` for UUIDs that do not resolve:
 
 ```ruby
 User.id_for(user.uuid)       # => 123
@@ -108,8 +112,14 @@ New records get a UUID automatically. Existing rows are backfilled with a rake
 task, which writes in batches and skips validations and callbacks:
 
 ```sh
-rake polyid:backfill[User]
-rake polyid:backfill[User,uuid,5000]   # explicit column and batch size
+rake "polyid:backfill[User]"
+rake "polyid:backfill[User,5000]"   # explicit batch size
+```
+
+Once every row has one, enforce it:
+
+```ruby
+change_column_null :users, :uuid, false
 ```
 
 UUIDs are write-once. A row that has none can still be given one — so a
@@ -128,7 +138,7 @@ User.create!(uuid: "nope")   # ActiveRecord::RecordInvalid, invalid
 
 ### UUID generation
 
-PolyId generates v7 UUIDs when Ruby supports them, falling back to v4. v7 is
+PolyId generates v7 UUIDs by default. v7 is
 time-ordered, which keeps inserts near the end of the index rather than
 scattered across it. Override globally or per model:
 

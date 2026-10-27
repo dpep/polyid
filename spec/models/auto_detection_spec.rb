@@ -1,14 +1,4 @@
 RSpec.describe "auto-detection" do
-  around do |example|
-    PolyId.reset
-    PolyId.auto_detect = true
-    PolyId.default_uuid_attribute = :uuid
-
-    example.run
-  ensure
-    PolyId.reset
-  end
-
   it "automatically enables polyid behavior for models with id and uuid columns" do
     user = create(:user)
 
