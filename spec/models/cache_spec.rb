@@ -202,6 +202,16 @@ RSpec.describe PolyId::Cache do
     expect(cache.read("polyid/User/#{user.id}")).to eq(user.uuid)
   end
 
+  it "does not cache a row that has no uuid yet" do
+    account = create(:account)
+    account.update_columns(uuid: nil)
+    cache.clear
+
+    expect(Account.uuid_for(account.id)).to be_nil
+    expect(cache.read("polyid/Account/uuid:")).to be_nil
+    expect(described_class.read_multi(Account.name, ids: [account.id])[:ids]).to be_empty
+  end
+
   it "does not cache a record whose transaction rolls back" do
     user = nil
     User.transaction(requires_new: true) do

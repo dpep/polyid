@@ -92,8 +92,10 @@ module PolyId
         ids = values.reject { |value| polyid_uuid_like?(value) || value.blank? }
 
         resolved_ids = PolyId::Cache.fetch_uuids(polyid_cache_name, ids:, defer: method(:polyid_after_commit)) do |missing_ids|
+          # a row with no uuid yet (or a junk one) has nothing worth caching
           unscoped.where(primary_key => missing_ids)
             .pluck(primary_key, polyid_uuid_attribute).to_h
+            .select { |_id, uuid| PolyId.uuid?(uuid) }
         end
 
         values.map do |value|
@@ -148,7 +150,9 @@ module PolyId
 
       # an unresolved uuid would reach ActiveRecord as nil, hiding it from the error
       def polyid_translate_find_args(args)
-        values = args.length == 1 && args.first.is_a?(Array) ? args.first : args
+        wrapped = args.length == 1 && args.first.is_a?(Array)
+        # ActiveRecord flattens too, eg. find(1, [2, 3])
+        values = args.flatten
         ids = ids_for(values)
 
         missing = values.zip(ids).find { |value, id| id.nil? && polyid_uuid_like?(value) }&.first
@@ -158,7 +162,7 @@ module PolyId
           )
         end
 
-        values.equal?(args) ? ids : [ids]
+        wrapped ? [ids] : ids
       end
 
       # an unresolved uuid must match nothing, not fall through to an integer cast
