@@ -32,4 +32,11 @@ RSpec.describe "auto-detection" do
     expect(User.polyid?).to be(false)
     expect { User.find(user.uuid) }.to raise_error(ActiveRecord::RecordNotFound)
   end
+
+  it "does not auto-enable a model whose database is unavailable" do
+    model = stub_const("Unreachable", Class.new(ActiveRecord::Base) { self.table_name = "users" })
+    allow(model).to receive(:table_exists?).and_raise(ActiveRecord::StatementInvalid)
+
+    expect(model.polyid?).to be false
+  end
 end

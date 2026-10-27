@@ -2,7 +2,6 @@ require "rake"
 
 RSpec.describe "polyid:backfill" do
   let(:task_name) { "polyid:backfill" }
-  let(:task_path) { File.expand_path("../../lib/tasks/polyid.rake", __dir__) }
   let(:task) { Rake::Task[task_name] }
 
   def raw_account_uuid(account)
@@ -13,16 +12,17 @@ RSpec.describe "polyid:backfill" do
     Widget.connection.select_value(Widget.where(id: widget.id).select(:public_id).to_sql)
   end
 
-  around do |example|
-    original_application = Rake.application
+  # load once: reloading a file resets its line coverage
+  before(:all) do
+    @original_application = Rake.application
     Rake.application = Rake::Application.new
     Rake::Task.define_task(:environment)
-    load task_path
-
-    example.run
-  ensure
-    Rake.application = original_application
+    load File.expand_path("../../lib/tasks/polyid.rake", __dir__)
   end
+
+  after(:all) { Rake.application = @original_application }
+
+  before { task.reenable }
 
   # create! assigns a uuid, so a row that predates polyid has to be made by
   # clearing the column behind the callbacks
