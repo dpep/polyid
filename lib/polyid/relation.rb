@@ -5,11 +5,7 @@ module PolyId
       return super if block_given?
       return super unless klass.polyid?
 
-      if ids.length == 1 && ids.first.is_a?(Array)
-        super(klass.ids_for(ids.first))
-      else
-        super(*klass.ids_for(ids))
-      end
+      super(*klass.polyid_translate_find_args(ids))
     end
 
     # `where`, `where.not`, and `rewhere` all funnel through here.

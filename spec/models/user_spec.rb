@@ -77,8 +77,8 @@ RSpec.describe User do
 
     it "raises when a uuid does not resolve to a record" do
       expect {
-        User.find(SecureRandom.uuid)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+        User.find(UNKNOWN_UUID)
+      }.to raise_error(ActiveRecord::RecordNotFound, /=#{Regexp.escape(UNKNOWN_UUID)}/)
     end
 
     it "does not integer-cast a non-RFC uuid into an unrelated id" do

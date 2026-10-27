@@ -45,14 +45,11 @@ module PolyId
         super
       end
 
+      # `find` has a statement cache fast path that bypasses the relation
       def find(*ids)
         return super unless polyid?
 
-        if ids.length == 1 && ids.first.is_a?(Array)
-          super(ids_for(ids.first))
-        else
-          super(*ids_for(ids))
-        end
+        super(*polyid_translate_find_args(ids))
       end
 
       # `find_by` has a statement cache fast path that bypasses `where`
@@ -143,6 +140,21 @@ module PolyId
 
       def polyid_generate_uuid
         PolyId.generate_uuid(polyid_uuid_generator || PolyId.uuid_generator)
+      end
+
+      # an unresolved uuid would reach ActiveRecord as nil, hiding it from the error
+      def polyid_translate_find_args(args)
+        values = args.length == 1 && args.first.is_a?(Array) ? args.first : args
+        ids = ids_for(values)
+
+        missing = values.zip(ids).find { |value, id| id.nil? && polyid_uuid_like?(value) }&.first
+        if missing
+          raise ActiveRecord::RecordNotFound.new(
+            "Couldn't find #{name} with '#{primary_key}'=#{missing}", name, primary_key, missing,
+          )
+        end
+
+        values.equal?(args) ? ids : [ids]
       end
 
       def polyid_translate_ids(values)

@@ -29,6 +29,7 @@
 - uuids are translated in table-qualified keys (`"users.id"`), foreign keys
   (`account_id:`), belongs_to associations (`account:`), and sets, and
   surrounding whitespace is ignored
+- `find` with an unknown uuid names it in the RecordNotFound message
 - backfill rejects invalid generated uuids and never overwrites one assigned
   while it runs
 

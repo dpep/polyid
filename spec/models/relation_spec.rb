@@ -35,7 +35,7 @@ RSpec.describe "relation lookups" do
     it "raises when the uuid does not exist" do
       expect {
         User.all.find(UNKNOWN_UUID)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      }.to raise_error(ActiveRecord::RecordNotFound, /=#{Regexp.escape(UNKNOWN_UUID)}/)
     end
 
     it "resolves uuids outside the default scope" do
