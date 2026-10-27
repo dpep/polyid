@@ -129,6 +129,18 @@ RSpec.describe "relation lookups" do
       expect(Gadget.where(thing_id: 3)).to be_empty
     end
 
+    it "accepts permitted params" do
+      # stands in for ActionController::Parameters
+      params = Class.new do
+        def initialize(conditions) = @conditions = conditions
+        def permitted? = true
+        def to_h = @conditions
+      end.new("id" => user.uuid)
+
+      expect(User.where(params)).to eq([user])
+      expect(User.find_by(params)).to eq(user)
+    end
+
     it "accepts a set" do
       expect(User.where(id: Set[user.uuid])).to eq([user])
     end
