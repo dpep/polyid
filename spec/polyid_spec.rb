@@ -21,8 +21,12 @@ RSpec.describe PolyId do
     end
   end
 
-  describe ".is_uuid?" do
-    subject(:is_uuid?) { described_class.is_uuid?(value) }
+  describe ".uuid?" do
+    subject(:uuid?) { described_class.uuid?(value) }
+
+    it "is aliased as is_uuid?" do
+      expect(described_class.is_uuid?(SecureRandom.uuid)).to be true
+    end
 
     context "with a dashed hexadecimal uuid" do
       let(:value) { SecureRandom.uuid }

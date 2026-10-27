@@ -271,7 +271,7 @@ module PolyId
 
       uuid_attribute = self.class.polyid_uuid_attribute
       value = public_send(uuid_attribute)
-      return unless PolyId.is_uuid?(value) && value != value.downcase
+      return unless PolyId.uuid?(value) && value != value.downcase
       return unless new_record? || will_save_change_to_attribute?(uuid_attribute)
 
       public_send("#{uuid_attribute}=", value.downcase)
@@ -309,7 +309,7 @@ module PolyId
         # only judge a value being written, so legacy rows can be saved as-is
         return unless new_record? || will_save_change_to_attribute?(uuid_attribute)
 
-        errors.add(uuid_attribute, "is invalid") unless PolyId.is_uuid?(value)
+        errors.add(uuid_attribute, "is invalid") unless PolyId.uuid?(value)
       elsif read_attribute_before_type_cast(uuid_attribute).present?
         # supplied, but failed to cast
         errors.add(uuid_attribute, "is invalid")

@@ -13,7 +13,7 @@ module PolyId
         # a garbage value (eg. 0.2.0's packed binary uuids) is a miss, so it gets overwritten
         {
           ids: id_keys.each_with_object({}) do |(id, cache_key), values|
-            values[id] = cached[cache_key] if PolyId.is_uuid?(cached[cache_key])
+            values[id] = cached[cache_key] if PolyId.uuid?(cached[cache_key])
           end,
           uuids: uuid_keys.each_with_object({}) do |(uuid, cache_key), values|
             values[uuid] = cached[cache_key] if valid_id?(cached[cache_key])

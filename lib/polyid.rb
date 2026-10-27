@@ -96,7 +96,7 @@ module PolyId
         "polyid is already in use; configure it in an initializer, before models are loaded"
     end
 
-    def is_uuid?(value)
+    def uuid?(value)
       return false unless value.is_a?(String) && UUID_PATTERN.match?(value)
 
       version = value.getbyte(14).chr.to_i(16)
@@ -104,6 +104,7 @@ module PolyId
 
       version.between?(1, 8) && variant.between?(8, 11)
     end
+    alias is_uuid? uuid?
   end
 end
 
