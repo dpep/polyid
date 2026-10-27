@@ -39,6 +39,10 @@ ActiveRecord::Schema.define do
     t.string :name
   end
 
+  create_table :tokens, id: false, force: true do |t|
+    t.binary :uuid, limit: 16, primary_key: true
+  end
+
   create_table :animals, force: true do |t|
     t.string :type
     t.string :uuid, null: false, index: { unique: true }
@@ -62,6 +66,9 @@ end
 
 class LegacyUser < ActiveRecord::Base
   has_many :users
+end
+
+class Token < ActiveRecord::Base
 end
 
 class Animal < ActiveRecord::Base

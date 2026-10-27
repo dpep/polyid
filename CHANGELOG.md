@@ -25,6 +25,7 @@
 - `uuid_for` casts string ids, so `uuid_for(params[:id])` works on a cold cache
 - uuid lookups ignore default scopes; the outer query still applies them
 - `PolyId.reset` no longer clears the configured cache store
+- a binary `uuid` primary key is left alone rather than cast as a polyid uuid
 - backfill rejects invalid generated uuids and never overwrites one assigned
   while it runs
 

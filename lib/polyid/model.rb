@@ -203,6 +203,8 @@ module PolyId
         uuid_attribute = polyid_uuid_attribute_raw.presence ||
           (PolyId.default_uuid_attribute.to_s if PolyId.auto_detect?)
         return unless uuid_attribute
+        # auto-detection skips a uuid primary key, so its bytes aren't polyid's to judge
+        return if polyid_uuid_attribute_raw.blank? && primary_key == uuid_attribute
 
         decorate_attributes([uuid_attribute]) do |_name, subtype|
           PolyId::BinaryUuidType.new if subtype.type == :binary
