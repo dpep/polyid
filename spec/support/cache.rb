@@ -1,6 +1,6 @@
 module ActiveSupport
   module Cache
-    class Store
+    class MemoryStore
       def empty?
         instance_variable_get(:@data).empty?
       end

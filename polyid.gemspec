@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.homepage    = "https://github.com/dpep/polyid"
   s.license     = "MIT"
   s.name        = "polyid"
-  s.summary     = "PolyId"
+  s.summary     = "Use ID and UUID keys interchangeably"
   s.version     = PolyId::VERSION
 
   s.required_ruby_version = ">= 3.3"

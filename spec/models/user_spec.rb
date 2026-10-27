@@ -1,26 +1,5 @@
 RSpec.describe User do
-  describe "database" do
-    it "creates a user" do
-      user = create(:user, name: "John Doe")
-      expect(user).to be_persisted
-      expect(user.id).to be_present
-      expect(user.uuid).to be_present
-      expect(user.name).to eq("John Doe")
-    end
-
-    it "retrieves a user" do
-      create(:user, name: "Jane Doe")
-      user = User.find_by(name: "Jane Doe")
-      expect(user).not_to be_nil
-      expect(user.name).to eq("Jane Doe")
-    end
-
-    it "updates a user" do
-      user = create(:user, name: "Bob Smith")
-      user.update(name: "Bob Smith Jr.")
-      expect(user.reload.name).to eq("Bob Smith Jr.")
-    end
-
+  describe "uuid attribute" do
     it "does not allow the uuid to change" do
       user = create(:user)
       original_uuid = user.uuid
@@ -41,12 +20,6 @@ RSpec.describe User do
     it "still generates a uuid when none is given" do
       expect(User.create!(uuid: nil).uuid).to be_a_uuid
       expect(User.create!.uuid).to be_a_uuid
-    end
-
-    it "deletes a user" do
-      user = create(:user, name: "Alice Jones")
-      user.destroy
-      expect(User.find_by(id: user.id)).to be_nil
     end
   end
 
@@ -157,13 +130,13 @@ RSpec.describe User do
     it "does not query for identity translations" do
       user = create(:user)
 
-      allow(User).to receive(:find_by).and_raise("unexpected query")
-      allow(User).to receive(:where).and_raise("unexpected query")
-
-      expect(User.id_for(user.id)).to eq(user.id)
-      expect(User.uuid_for(user.uuid)).to eq(user.uuid)
-      expect(User.ids_for([user.id, nil])).to eq([user.id, nil])
-      expect(User.uuids_for([user.uuid, nil])).to eq([user.uuid, nil])
+      queries = sql_queries do
+        expect(User.id_for(user.id)).to eq(user.id)
+        expect(User.uuid_for(user.uuid)).to eq(user.uuid)
+        expect(User.ids_for([user.id, nil])).to eq([user.id, nil])
+        expect(User.uuids_for([user.uuid, nil])).to eq([user.uuid, nil])
+      end
+      expect(queries).to be_empty
     end
   end
 

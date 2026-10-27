@@ -1,11 +1,4 @@
 RSpec.describe "configuration" do
-  around do |example|
-    PolyId.reset
-    example.run
-  ensure
-    PolyId.reset
-  end
-
   describe "once a model has resolved its config" do
     before { User.polyid? }
 

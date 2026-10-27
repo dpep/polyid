@@ -13,10 +13,6 @@ RSpec.describe "polyid:backfill" do
     Widget.connection.select_value(Widget.where(id: widget.id).select(:public_id).to_sql)
   end
 
-  before do
-    task.reenable
-  end
-
   around do |example|
     original_application = Rake.application
     Rake.application = Rake::Application.new

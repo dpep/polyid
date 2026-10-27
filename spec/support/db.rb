@@ -6,7 +6,18 @@ ActiveRecord::Base.establish_connection(
   database: ":memory:"
 )
 
+module SqlQueries
+  def sql_queries(&)
+    queries = []
+    record = ->(*, payload) { queries << payload[:sql] unless %w[SCHEMA TRANSACTION].include?(payload[:name]) }
+    ActiveSupport::Notifications.subscribed(record, "sql.active_record", &)
+    queries
+  end
+end
+
 RSpec.configure do |config|
+  config.include SqlQueries
+
   # non-joinable, as Rails' transactional fixtures are, so after_commit fires
   config.around(:each) do |example|
     ActiveRecord::Base.connection.transaction(joinable: false) do

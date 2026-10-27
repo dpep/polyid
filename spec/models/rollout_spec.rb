@@ -70,10 +70,6 @@ RSpec.describe "polyid rollout" do
       expect(widget.public_id).to eq("00000000-0000-7000-8000-000000000001")
     end
 
-    it "allows a model-specific generator override" do
-      expect(widget.public_id).to eq("00000000-0000-7000-8000-000000000001")
-    end
-
     it "prefers the model-specific generator over the global generator" do
       PolyId.uuid_generator = -> { "00000000-0000-7000-8000-000000000002" }
 
