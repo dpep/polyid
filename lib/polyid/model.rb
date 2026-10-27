@@ -277,8 +277,10 @@ module PolyId
       public_send("#{uuid_attribute}=", value.downcase)
     end
 
+    # a uuid is write-once, so only a create or a backfill has anything to cache
     def polyid_warm_cache
       return unless self.class.polyid?
+      return unless saved_change_to_attribute?(self.class.polyid_uuid_attribute)
 
       cache_polyid
     end

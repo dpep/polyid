@@ -177,16 +177,32 @@ RSpec.describe PolyId::Cache do
   end
 
   describe "save cache warming" do
-    it "writes both id and uuid entries when a record is saved" do
+    it "writes both id and uuid entries when a record is created" do
       user = create(:user)
-      cache.clear
-
-      user.update!(name: "Updated Name")
 
       expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(
         ids: { user.id => user.uuid },
         uuids: { user.uuid => user.id },
       )
+    end
+
+    it "writes entries when a uuid is backfilled" do
+      account = create(:account)
+      account.update_columns(uuid: nil)
+      cache.clear
+
+      account.reload.update!(uuid: SecureRandom.uuid)
+
+      expect(described_class.read_multi(Account.name, ids: [account.id])[:ids]).to eq(account.id => account.uuid)
+    end
+
+    it "skips updates that leave the uuid alone" do
+      user = create(:user)
+      cache.clear
+
+      user.update!(name: "Updated Name")
+
+      expect(described_class.read_multi(model_name, ids: [user.id])[:ids]).to be_empty
     end
   end
 

@@ -21,6 +21,7 @@
   misses and overwritten
 - the cache is written after commit, so a rolled back record is never cached,
   including by a lookup made inside the transaction
+- saving a record only writes the cache when it gains a uuid, not on every update
 - uuid-shaped values that are not valid uuids no longer fall through to an
   integer id lookup
 - `uuid_for` casts string ids, so `uuid_for(params[:id])` works on a cold cache
