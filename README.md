@@ -173,6 +173,10 @@ raises `PolyId::ConfigurationError` rather than silently doing nothing.
 `PolyId.cache`, `cache_ttl`, and `uuid_generator` are read afresh each time and
 stay settable.
 
+PolyId hooks into every model, not only polyid ones: it adds save, commit, and
+destroy callbacks, and wraps `find`, `find_by`, and `where` to translate UUIDs.
+On a model that isn't polyid these return early, but they are in the chain.
+
 ### Caching
 
 PolyId caches `id <=> uuid` translations in memory by default. Lookups populate
@@ -190,6 +194,12 @@ config.cache_store = :redis_cache_store, {
 # config/initializers/polyid.rb
 PolyId.cache = Rails.cache
 ```
+
+Mappings are evicted when a record is destroyed. `delete_all`, `update_all`, and
+raw SQL skip callbacks, so they leave entries behind. That's harmless while ids
+are never reused — a stale entry just resolves to a missing row — but if ids can
+be reused (a sequence reset, a restore, manually assigned ids), clear the cache
+afterwards or a stale UUID can resolve to an unrelated record.
 
 Entries expire after a month by default. Since an `id <=> uuid` mapping never
 changes, expiry only costs a re-query — but it matters operationally:
