@@ -138,7 +138,7 @@ module PolyId
             PolyId.default_uuid_attribute.to_s
           end
       rescue ActiveRecord::NoDatabaseError, ActiveRecord::StatementInvalid
-        # unmemoised, so a database blip at first touch doesn't disable polyid for good
+        # unmemoised, so a database blip doesn't disable polyid for good
         nil
       end
 
