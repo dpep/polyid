@@ -68,7 +68,7 @@ RSpec.describe "polyid:backfill" do
   it "accepts a batch size" do
     3.times { |i| strip_uuid(Account.create!(name: "Legacy #{i}")) }
 
-    task.invoke("Account", "uuid", "2")
+    task.invoke("Account", "2")
 
     expect(Account.where(uuid: nil)).to be_empty
   end

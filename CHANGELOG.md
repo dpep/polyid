@@ -23,6 +23,8 @@
   including by a lookup made inside the transaction
 - saving a record only writes the cache when it gains a uuid, not on every update
 - `PolyId.is_uuid?` is renamed `PolyId.uuid?`.  `is_uuid?` remains as an alias
+- `rake polyid:backfill` drops its `uuid_attribute` argument and always fills
+  the model's polyid column: `rake "polyid:backfill[User,5000]"`
 - uuid-shaped values that are not valid uuids no longer fall through to an
   integer id lookup
 - `uuid_for` casts string ids, so `uuid_for(params[:id])` works on a cold cache

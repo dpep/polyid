@@ -108,8 +108,8 @@ New records get a UUID automatically. Existing rows are backfilled with a rake
 task, which writes in batches and skips validations and callbacks:
 
 ```sh
-rake polyid:backfill[User]
-rake polyid:backfill[User,uuid,5000]   # explicit column and batch size
+rake "polyid:backfill[User]"
+rake "polyid:backfill[User,5000]"   # explicit batch size
 ```
 
 UUIDs are write-once. A row that has none can still be given one — so a

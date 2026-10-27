@@ -1,11 +1,11 @@
 namespace :polyid do
-  desc "Backfill NULL polyid UUIDs for a model: rake polyid:backfill[ModelName,uuid_attribute,batch_size]"
-  task :backfill, [:model_name, :uuid_attribute, :batch_size] => :environment do |_task, args|
+  desc "Backfill NULL polyid UUIDs for a model: rake polyid:backfill[ModelName,batch_size]"
+  task :backfill, [:model_name, :batch_size] => :environment do |_task, args|
     model_name = args[:model_name] or raise ArgumentError, "model_name is required"
     model = model_name.constantize
     raise ArgumentError, "#{model_name} is not configured with polyid" unless model.polyid?
 
-    uuid_attribute = (args[:uuid_attribute] || model.polyid_uuid_attribute).to_s
+    uuid_attribute = model.polyid_uuid_attribute
     batch_size = (args[:batch_size] || 1_000).to_i
     pk = model.primary_key
 
