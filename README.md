@@ -38,16 +38,20 @@ User.find(user.id, user.uuid)
 User.find([user.uuid, user.id])
 ```
 
-UUIDs work anywhere the primary key is expected, including through relations and
-associations:
+UUIDs work anywhere the primary key is expected, including through relations,
+associations, and foreign keys:
 
 ```ruby
 User.where(id: user.uuid)
 User.find_by(id: user.uuid)
 User.where.not(id: user.uuid)
+User.where("users.id" => user.uuid)
 
 account.users.find(user.uuid)
 account.users.where(id: user.uuid)
+
+User.where(account_id: account.uuid)
+User.where(account: account.uuid)
 ```
 
 Scopes are still enforced, so `account.users.find(uuid)` raises
@@ -110,6 +114,12 @@ task, which writes in batches and skips validations and callbacks:
 ```sh
 rake "polyid:backfill[User]"
 rake "polyid:backfill[User,5000]"   # explicit batch size
+```
+
+Once every row has one, enforce it:
+
+```ruby
+change_column_null :users, :uuid, false
 ```
 
 UUIDs are write-once. A row that has none can still be given one — so a
