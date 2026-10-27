@@ -37,7 +37,7 @@ RSpec.describe "polyid rollout" do
 
     it "accepts a uuid" do
       uuid = SecureRandom.uuid
-      account.update!(uuid: uuid)
+      account.update!(uuid:)
 
       expect(account.reload.uuid).to eq(uuid)
     end

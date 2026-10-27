@@ -20,10 +20,12 @@ module PolyId
       class_attribute :polyid_uuid_generator, instance_writer: false
 
       before_validation :polyid_assign_uuid, on: :create
+      before_validation :polyid_canonicalise_uuid
       validate :polyid_validate_uuid_format
       validate :polyid_validate_uuid_immutable
-      after_save :polyid_warm_cache
-      after_destroy :polyid_evict_cache
+      # a rolled back id can be reused, so only cache what is committed
+      after_commit :polyid_warm_cache, on: %i[create update]
+      after_commit :polyid_evict_cache, on: :destroy
     end
 
     class_methods do
@@ -69,8 +71,9 @@ module PolyId
         values = Array(values)
         uuids = values.filter_map { |value| polyid_normalize_uuid(value) }
 
-        resolved_uuids = PolyId::Cache.fetch_ids(polyid_cache_name, uuids: uuids) do |missing_uuids|
-          where(polyid_uuid_attribute => missing_uuids)
+        # unscoped: the mapping is global, and the caller's query still applies its scope
+        resolved_uuids = PolyId::Cache.fetch_ids(polyid_cache_name, uuids:) do |missing_uuids|
+          unscoped.where(polyid_uuid_attribute => missing_uuids)
             .pluck(polyid_uuid_attribute, primary_key).to_h
         end
 
@@ -86,16 +89,18 @@ module PolyId
 
       def uuids_for(values)
         polyid_required!
-        values = Array(values)
-        ids = values.reject { |value| PolyId.is_uuid?(value) || value.blank? }
+        # cast so "1" matches the integer key that pluck returns
+        pk_type = type_for_attribute(primary_key)
+        values = Array(values).map { |value| polyid_uuid_like?(value) ? value : pk_type.cast(value) }
+        ids = values.reject { |value| polyid_uuid_like?(value) || value.blank? }
 
-        resolved_ids = PolyId::Cache.fetch_uuids(polyid_cache_name, ids: ids) do |missing_ids|
-          where(primary_key => missing_ids)
+        resolved_ids = PolyId::Cache.fetch_uuids(polyid_cache_name, ids:) do |missing_ids|
+          unscoped.where(primary_key => missing_ids)
             .pluck(primary_key, polyid_uuid_attribute).to_h
         end
 
         values.map do |value|
-          PolyId.is_uuid?(value) ? value : resolved_ids[value]
+          polyid_uuid_like?(value) ? value : resolved_ids[value]
         end
       end
 
@@ -129,38 +134,6 @@ module PolyId
         base_class.name
       end
 
-      private
-
-      # uuids are case insensitive; canonicalise so lookups match what is stored
-      def polyid_normalize_uuid(value)
-        value.downcase if PolyId.is_uuid?(value)
-      end
-
-      def polyid_required!
-        raise ArgumentError, "#{name} is not configured with polyid" unless polyid?
-      end
-
-      def polyid_translate_ids(values)
-        is_array = values.is_a?(Array)
-        return values unless is_array ? values.any? { |value| PolyId.is_uuid?(value) } : PolyId.is_uuid?(values)
-
-        ids = ids_for(values)
-        is_array ? ids : ids.first
-      end
-
-      # mirrors ActiveRecord::TableMetadata#associated_table
-      def polyid_associated_model(key)
-        reflection = reflect_on_association(key) || reflect_on_association(key.to_s.singularize)
-        return self if reflection.nil? && key.to_s == table_name
-        return if reflection.nil? || reflection.polymorphic?
-
-        reflection.klass
-      end
-
-      def polyid_generate_uuid
-        PolyId.generate_uuid(polyid_uuid_generator || PolyId.uuid_generator)
-      end
-
       def polyid_uuid_attribute
         return @polyid_uuid_attribute if defined?(@polyid_uuid_attribute)
 
@@ -172,6 +145,43 @@ module PolyId
           elsif polyid_auto_detection?
             PolyId.default_uuid_attribute.to_s
           end
+      end
+
+      def polyid_generate_uuid
+        PolyId.generate_uuid(polyid_uuid_generator || PolyId.uuid_generator)
+      end
+
+      private
+
+      # judged by shape, not RFC validity: a non-RFC uuid passed through as an id
+      # would be integer-cast ("8f47..." => 8) and match an unrelated row
+      def polyid_uuid_like?(value)
+        value.is_a?(String) && PolyId::UUID_PATTERN.match?(value)
+      end
+
+      # uuids are case insensitive; canonicalise so lookups match what is stored
+      def polyid_normalize_uuid(value)
+        value.downcase if polyid_uuid_like?(value)
+      end
+
+      def polyid_required!
+        raise ArgumentError, "#{name} is not configured with polyid" unless polyid?
+      end
+
+      def polyid_translate_ids(values)
+        return ids_for(values) if values.is_a?(Array) && values.any? { |value| polyid_uuid_like?(value) }
+        return id_for(values) if polyid_uuid_like?(values)
+
+        values
+      end
+
+      # mirrors ActiveRecord::TableMetadata#associated_table
+      def polyid_associated_model(key)
+        reflection = reflect_on_association(key) || reflect_on_association(key.to_s.singularize)
+        return self if reflection.nil? && key.to_s == table_name
+        return if reflection.nil? || reflection.polymorphic?
+
+        reflection.klass
       end
 
       def polyid_auto_detection?
@@ -205,12 +215,24 @@ module PolyId
     def polyid_assign_uuid
       return unless self.class.polyid?
 
-      uuid_attribute = self.class.send(:polyid_uuid_attribute)
+      uuid_attribute = self.class.polyid_uuid_attribute
       return if public_send(uuid_attribute).present?
       # invalid input casts to nil -- let the format validation report it
       return if read_attribute_before_type_cast(uuid_attribute).present?
 
-      public_send("#{uuid_attribute}=", self.class.send(:polyid_generate_uuid))
+      public_send("#{uuid_attribute}=", self.class.polyid_generate_uuid)
+    end
+
+    # lookups downcase, so a string column must store lowercase to be found
+    def polyid_canonicalise_uuid
+      return unless self.class.polyid?
+
+      uuid_attribute = self.class.polyid_uuid_attribute
+      value = public_send(uuid_attribute)
+      return unless PolyId.is_uuid?(value) && value != value.downcase
+      return unless new_record? || will_save_change_to_attribute?(uuid_attribute)
+
+      public_send("#{uuid_attribute}=", value.downcase)
     end
 
     def polyid_warm_cache
@@ -223,7 +245,7 @@ module PolyId
       return unless self.class.polyid?
 
       id = public_send(self.class.primary_key)
-      uuid = public_send(self.class.send(:polyid_uuid_attribute))
+      uuid = public_send(self.class.polyid_uuid_attribute)
 
       PolyId::Cache.delete_multi(
         self.class.polyid_cache_name,
@@ -236,7 +258,7 @@ module PolyId
     def polyid_validate_uuid_format
       return unless self.class.polyid?
 
-      uuid_attribute = self.class.send(:polyid_uuid_attribute)
+      uuid_attribute = self.class.polyid_uuid_attribute
       value = public_send(uuid_attribute)
 
       if value.present?
@@ -254,7 +276,7 @@ module PolyId
     def polyid_validate_uuid_immutable
       return unless self.class.polyid?
 
-      uuid_attribute = self.class.send(:polyid_uuid_attribute)
+      uuid_attribute = self.class.polyid_uuid_attribute
       return unless persisted?
       return unless will_save_change_to_attribute?(uuid_attribute)
       return if attribute_in_database(uuid_attribute).nil?
@@ -264,10 +286,10 @@ module PolyId
 
     def cache_polyid
       id = public_send(self.class.primary_key)
-      uuid = public_send(self.class.send(:polyid_uuid_attribute))
+      uuid = public_send(self.class.polyid_uuid_attribute)
       return if id.blank? || uuid.blank?
 
-      PolyId::Cache.write(self.class.polyid_cache_name, id: id, uuid: uuid)
+      PolyId::Cache.write(self.class.polyid_cache_name, id:, uuid:)
     end
   end
 end

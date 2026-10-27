@@ -190,6 +190,26 @@ RSpec.describe PolyId::Cache do
     end
   end
 
+  it "treats garbage cache values as misses and overwrites them" do
+    user = create(:user)
+    cache.write("polyid/User/#{user.id}", SecureRandom.bytes(16))
+    cache.write("polyid/User/uuid:#{user.uuid}", "")
+
+    expect(User.uuid_for(user.id)).to eq(user.uuid)
+    expect(User.id_for(user.uuid)).to eq(user.id)
+    expect(cache.read("polyid/User/#{user.id}")).to eq(user.uuid)
+  end
+
+  it "does not cache a record whose transaction rolls back" do
+    user = nil
+    User.transaction(requires_new: true) do
+      user = create(:user)
+      raise ActiveRecord::Rollback
+    end
+
+    expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(ids: {}, uuids: {})
+  end
+
   describe "translation cache" do
     it "uses the cache for repeat uuid lookups" do
       user = create(:user)

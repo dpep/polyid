@@ -80,6 +80,14 @@ RSpec.describe User do
         User.find(SecureRandom.uuid)
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
+
+    it "does not integer-cast a non-RFC uuid into an unrelated id" do
+      create(:user, id: 8)
+
+      expect {
+        User.find("8f47a7ca-8f4a-0d7b-96e6-60a0b47ddf68")
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
   end
 
   describe "translation helpers" do
@@ -124,6 +132,17 @@ RSpec.describe User do
 
       expect(User.ids_for([first.uuid, second.id, missing_uuid, nil])).to eq([first.id, second.id, nil, nil])
       expect(User.uuids_for([first.id, second.uuid, 999_999, nil])).to eq([first.uuid, second.uuid, nil, nil])
+    end
+
+    it "casts string ids on a cold cache" do
+      expect(User.uuid_for(user.id.to_s)).to eq(user.uuid)
+    end
+
+    it "stores uppercase uuids in lowercase so they can be found" do
+      user = User.create!(uuid: SecureRandom.uuid.upcase)
+
+      expect(user.reload.uuid).to eq(user.uuid.downcase)
+      expect(User.find(user.uuid.upcase)).to eq(user)
     end
 
     it "accepts uppercase uuids" do

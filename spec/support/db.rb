@@ -7,8 +7,9 @@ ActiveRecord::Base.establish_connection(
 )
 
 RSpec.configure do |config|
+  # non-joinable, as Rails' transactional fixtures are, so after_commit fires
   config.around(:each) do |example|
-    ActiveRecord::Base.connection.transaction do
+    ActiveRecord::Base.connection.transaction(joinable: false) do
       example.run
       raise ActiveRecord::Rollback
     end

@@ -53,7 +53,7 @@ account.users.where(id: user.uuid)
 Scopes are still enforced, so `account.users.find(uuid)` raises
 `ActiveRecord::RecordNotFound` for a user belonging to another account.
 
-Translation helpers preserve input order and return `nil` for misses:
+Translation helpers preserve input order and return `nil` for UUIDs that do not resolve:
 
 ```ruby
 User.id_for(user.uuid)       # => 123
@@ -128,7 +128,7 @@ User.create!(uuid: "nope")   # ActiveRecord::RecordInvalid, invalid
 
 ### UUID generation
 
-PolyId generates v7 UUIDs when Ruby supports them, falling back to v4. v7 is
+PolyId generates v7 UUIDs by default. v7 is
 time-ordered, which keeps inserts near the end of the index rather than
 scattered across it. Override globally or per model:
 

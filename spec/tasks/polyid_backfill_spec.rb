@@ -73,6 +73,15 @@ RSpec.describe "polyid:backfill" do
     expect(Account.where(uuid: nil)).to be_empty
   end
 
+  it "refuses to write an invalid generated uuid" do
+    strip_uuid(Account.create!(name: "Legacy"))
+    allow(Account).to receive(:polyid_generate_uuid).and_return("nope")
+
+    expect {
+      task.invoke("Account")
+    }.to raise_error(ArgumentError, /invalid uuid/)
+  end
+
   it "raises for a model without polyid" do
     expect {
       task.invoke("LegacyUser")

@@ -1,6 +1,6 @@
 RSpec.describe "relation lookups" do
   let(:account) { create(:account) }
-  let(:user) { create(:user, account: account) }
+  let(:user) { create(:user, account:) }
 
   describe "#find" do
     it "finds by uuid through a relation" do
@@ -18,7 +18,7 @@ RSpec.describe "relation lookups" do
     end
 
     it "accepts ids, uuids, and a mix of both" do
-      other = create(:user, account: account)
+      other = create(:user, account:)
 
       expect(account.users.find(user.id, other.uuid)).to eq([user, other])
       expect(account.users.find([user.uuid, other.id])).to eq([user, other])
@@ -36,6 +36,13 @@ RSpec.describe "relation lookups" do
       expect {
         User.all.find(UNKNOWN_UUID)
       }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+
+    it "resolves uuids outside the default scope" do
+      stub_const("ScopedUser", Class.new(User) { default_scope { where.not(name: "hidden") } })
+      hidden = ScopedUser.create!(name: "hidden")
+
+      expect(ScopedUser.unscoped.find(hidden.uuid)).to eq(hidden)
     end
 
     it "still yields to the block form" do

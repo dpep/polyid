@@ -15,6 +15,18 @@
   so an ordinary query no longer costs a cache write per row
 - uppercase uuids resolve, on both string and binary columns
 - STI subclasses share cached mappings with their base class
+- uuids written in uppercase to a string column are stored lowercase, so
+  lookups find them.  rows already stored in uppercase need a one-off downcase
+- garbage cache values, including 0.2.0's packed binary uuids, are treated as
+  misses and overwritten
+- the cache is written after commit, so a rolled back record is never cached
+- uuid-shaped values that are not valid uuids no longer fall through to an
+  integer id lookup
+- `uuid_for` casts string ids, so `uuid_for(params[:id])` works on a cold cache
+- uuid lookups ignore default scopes; the outer query still applies them
+- `PolyId.reset` no longer clears the configured cache store
+- backfill rejects invalid generated uuids and never overwrites one assigned
+  while it runs
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade
