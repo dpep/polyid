@@ -35,6 +35,8 @@
   (`account_id:`), belongs_to associations (`account:`), and sets, and
   surrounding whitespace is ignored
 - `find` with an unknown uuid names it in the RecordNotFound message
+- a database error during auto-detection no longer disables polyid for that
+  model until restart
 - backfill rejects invalid generated uuids and never overwrites one assigned
   while it runs
 

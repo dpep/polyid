@@ -136,6 +136,9 @@ module PolyId
           elsif polyid_auto_detection?
             PolyId.default_uuid_attribute.to_s
           end
+      rescue ActiveRecord::NoDatabaseError, ActiveRecord::StatementInvalid
+        # unmemoised, so a database blip at first touch doesn't disable polyid for good
+        nil
       end
 
       def polyid_generate_uuid
@@ -231,8 +234,6 @@ module PolyId
 
         uuid_attribute = PolyId.default_uuid_attribute.to_s
         primary_key.present? && primary_key != uuid_attribute && column_names.include?(uuid_attribute)
-      rescue ActiveRecord::NoDatabaseError, ActiveRecord::StatementInvalid
-        false
       end
 
       # decorates lazily, so this must not read the schema it is about to load

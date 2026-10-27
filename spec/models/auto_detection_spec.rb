@@ -39,4 +39,14 @@ RSpec.describe "auto-detection" do
 
     expect(model.polyid?).to be false
   end
+
+  it "detects again once the database recovers" do
+    model = stub_const("Flaky", Class.new(ActiveRecord::Base) { self.table_name = "users" })
+    allow(model).to receive(:table_exists?).and_raise(ActiveRecord::StatementInvalid)
+    model.polyid?
+
+    allow(model).to receive(:table_exists?).and_call_original
+
+    expect(model.polyid?).to be true
+  end
 end
