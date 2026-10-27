@@ -80,7 +80,8 @@ class User < ActiveRecord::Base
 end
 
 class Account < ActiveRecord::Base
-  has_many :users
+  # inverse_of makes a loaded association scan rather than query
+  has_many :users, inverse_of: :account
 end
 
 class Widget < ActiveRecord::Base

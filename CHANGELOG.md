@@ -42,6 +42,7 @@
 - uuids in permitted params passed to `where` or `find_by` are translated
 - `find_or_create_by`, `create_or_find_by`, and `find_or_initialize_by` create
   with translated uuids, not just find with them
+- `find(uuid)` works on a loaded `has_many ..., inverse_of:` association
 - a database error during auto-detection no longer disables polyid for that
   model until restart
 - backfill rejects invalid generated uuids and never overwrites one assigned
