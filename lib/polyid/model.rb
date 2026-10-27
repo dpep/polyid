@@ -101,8 +101,9 @@ module PolyId
         end
       end
 
+      # hot path: a nil check, since present? would regex-match the string
       def polyid?
-        polyid_uuid_attribute.present?
+        !polyid_uuid_attribute.nil?
       end
 
       # nested conditions are translated even when this model isn't polyid
