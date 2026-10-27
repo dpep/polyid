@@ -11,6 +11,8 @@ module PolyId
     # `where`, `where.not`, and `rewhere` all funnel through here.
     # public to match ActiveRecord, which calls it with an explicit receiver.
     def build_where_clause(opts, rest = [])
+      # as ActiveRecord does, so permitted params arrive as a Hash
+      opts = sanitize_forbidden_attributes(opts)
       return super unless opts.is_a?(Hash)
 
       super(klass.polyid_translate_conditions(opts), rest)
