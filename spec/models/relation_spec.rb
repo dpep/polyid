@@ -12,6 +12,7 @@ RSpec.describe "relation lookups" do
     end
 
     it "finds by uuid through a loaded association" do
+      user
       account.users.load
 
       expect(account.users.find(user.uuid)).to eq(user)
