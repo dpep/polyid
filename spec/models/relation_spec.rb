@@ -90,6 +90,45 @@ RSpec.describe "relation lookups" do
       expect(User.where(account: account.uuid)).to eq([user])
     end
 
+    context "with a uuid that resolves to nothing" do
+      # integer-casts to 190, so a fall-through would match these
+      let(:unknown) { "0190abcd-0000-7000-8000-000000000001" }
+      let!(:account) { create(:account, id: 190) }
+      let!(:user) { create(:user, id: 190, account:) }
+
+      it "matches nothing rather than an integer-cast id" do
+        expect(User.where(id: unknown)).to be_empty
+        expect(User.find_by(id: unknown)).to be_nil
+        expect(User.where("users.id" => unknown)).to be_empty
+        expect(User.where(account_id: unknown)).to be_empty
+        expect(User.exists?(unknown)).to be false
+      end
+
+      it "deletes nothing" do
+        User.delete(unknown)
+
+        expect(User.exists?(user.id)).to be true
+      end
+
+      it "does not match rows with no foreign key" do
+        create(:user, account: nil)
+
+        expect(User.where(account_id: [unknown])).to be_empty
+      end
+    end
+
+    it "leaves a foreign key onto the uuid alone" do
+      org = Org.create!
+      member = Member.create!(org:)
+
+      expect(Member.where(org_uuid: org.uuid)).to eq([member])
+      expect(Member.where(org: org.uuid)).to eq([member])
+    end
+
+    it "does not resolve associations for values that aren't uuids" do
+      expect(Gadget.where(thing_id: 3)).to be_empty
+    end
+
     it "accepts a set" do
       expect(User.where(id: Set[user.uuid])).to eq([user])
     end

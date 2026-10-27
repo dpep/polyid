@@ -112,7 +112,7 @@ module PolyId
 
         conditions.each do |key, values|
           new_values = polyid_translate_condition(key, values)
-          next if new_values.nil? || new_values.equal?(values)
+          next if new_values.equal?(values)
 
           translated ||= conditions.dup
           translated[key] = new_values
@@ -161,12 +161,14 @@ module PolyId
         values.equal?(args) ? ids : [ids]
       end
 
+      # an unresolved uuid must match nothing, not fall through to an integer cast
+      # or become a NULL that matches rows with no foreign key
       def polyid_translate_ids(values)
-        if values.is_a?(Array) || values.is_a?(Set)
-          return values.none? { |value| polyid_uuid_like?(value) } ? values : ids_for(values.to_a)
-        end
+        return values unless polyid_uuid_input?(values)
+        return id_for(values) || [] unless values.is_a?(Array) || values.is_a?(Set)
 
-        polyid_uuid_like?(values) ? id_for(values) : values
+        values = values.to_a
+        values.zip(ids_for(values)).reject { |value, id| id.nil? && polyid_uuid_like?(value) }.map(&:last)
       end
 
       private
@@ -182,20 +184,30 @@ module PolyId
         value.strip.downcase if polyid_uuid_like?(value)
       end
 
+      def polyid_uuid_input?(values)
+        return values.any? { |value| polyid_uuid_like?(value) } if values.is_a?(Array) || values.is_a?(Set)
+
+        polyid_uuid_like?(values)
+      end
+
+      # returns values itself when there is nothing to translate
       def polyid_translate_condition(key, values)
-        return polyid_associated_model(key)&.polyid_translate_conditions(values) if values.is_a?(Hash)
-        # tuple keys, eg. [:id, :name] => [[1, "a"]], as in_batches builds
-        return if key.is_a?(Array)
+        if values.is_a?(Hash)
+          return polyid_associated_model(key)&.polyid_translate_conditions(values) || values
+        end
+        # tuple keys, eg. [:id, :name] => [[1, "a"]], as in_batches builds.  checking
+        # the value first spares resolving association classes for every key
+        return values if key.is_a?(Array) || !polyid_uuid_input?(values)
 
         # "users.id" => uuid
         table, column = key.to_s.split(".", 2)
         if column
           model = table == table_name ? self : polyid_associated_model(table)
-          return model&.polyid_translate_conditions(column => values)&.fetch(column)
+          return model ? model.polyid_translate_conditions(column => values).fetch(column) : values
         end
 
         model = key.to_s == primary_key ? self : polyid_referenced_model(key)
-        model.polyid_translate_ids(values) if model&.polyid?
+        model&.polyid? ? model.polyid_translate_ids(values) : values
       end
 
       # the belongs_to target of an association name or foreign key
@@ -203,6 +215,8 @@ module PolyId
         reflection = reflect_on_association(key) ||
           reflect_on_all_associations(:belongs_to).find { |assoc| assoc.foreign_key.to_s == key.to_s }
         return unless reflection&.belongs_to? && !reflection.polymorphic?
+        # eg. primary_key: :uuid, where the foreign key already holds uuids
+        return unless reflection.association_primary_key.to_s == reflection.klass.primary_key
 
         reflection.klass
       end
