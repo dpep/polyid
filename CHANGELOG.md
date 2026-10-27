@@ -19,7 +19,8 @@
   lookups find them.  rows already stored in uppercase need a one-off downcase
 - garbage cache values, including 0.2.0's packed binary uuids, are treated as
   misses and overwritten
-- the cache is written after commit, so a rolled back record is never cached
+- the cache is written after commit, so a rolled back record is never cached,
+  including by a lookup made inside the transaction
 - uuid-shaped values that are not valid uuids no longer fall through to an
   integer id lookup
 - `uuid_for` casts string ids, so `uuid_for(params[:id])` works on a cold cache

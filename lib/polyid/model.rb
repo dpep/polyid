@@ -69,7 +69,7 @@ module PolyId
         uuids = values.filter_map { |value| polyid_normalize_uuid(value) }
 
         # unscoped: the mapping is global, and the caller's query still applies its scope
-        resolved_uuids = PolyId::Cache.fetch_ids(polyid_cache_name, uuids:) do |missing_uuids|
+        resolved_uuids = PolyId::Cache.fetch_ids(polyid_cache_name, uuids:, defer: method(:polyid_after_commit)) do |missing_uuids|
           unscoped.where(polyid_uuid_attribute => missing_uuids)
             .pluck(polyid_uuid_attribute, primary_key).to_h
         end
@@ -91,7 +91,7 @@ module PolyId
         values = Array(values).map { |value| polyid_normalize_uuid(value) || pk_type.cast(value) }
         ids = values.reject { |value| polyid_uuid_like?(value) || value.blank? }
 
-        resolved_ids = PolyId::Cache.fetch_uuids(polyid_cache_name, ids:) do |missing_ids|
+        resolved_ids = PolyId::Cache.fetch_uuids(polyid_cache_name, ids:, defer: method(:polyid_after_commit)) do |missing_ids|
           unscoped.where(primary_key => missing_ids)
             .pluck(primary_key, polyid_uuid_attribute).to_h
         end
@@ -201,6 +201,13 @@ module PolyId
         return unless reflection&.belongs_to? && !reflection.polymorphic?
 
         reflection.klass
+      end
+
+      # rows read in a transaction may never commit.  a non-joinable transaction,
+      # eg. transactional tests, commits each nested one's callbacks itself
+      def polyid_after_commit(&)
+        transaction = with_connection(&:current_transaction)
+        transaction.joinable? ? transaction.after_commit(&) : yield
       end
 
       def polyid_required!

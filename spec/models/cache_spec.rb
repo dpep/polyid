@@ -210,6 +210,30 @@ RSpec.describe PolyId::Cache do
     expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(ids: {}, uuids: {})
   end
 
+  it "does not cache lookups made in a transaction that rolls back" do
+    user = nil
+    User.transaction(requires_new: true) do
+      user = create(:user)
+      User.id_for(user.uuid)
+      User.uuid_for(user.id)
+      raise ActiveRecord::Rollback
+    end
+
+    expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(ids: {}, uuids: {})
+  end
+
+  it "caches lookups made in a transaction once it commits" do
+    user = create(:user)
+    cache.clear
+
+    User.transaction(requires_new: true) do
+      User.id_for(user.uuid)
+      expect(described_class.read_multi(model_name, uuids: [user.uuid])[:uuids]).to be_empty
+    end
+
+    expect(described_class.read_multi(model_name, uuids: [user.uuid])[:uuids]).to eq(user.uuid => user.id)
+  end
+
   describe "translation cache" do
     it "uses the cache for repeat uuid lookups" do
       user = create(:user)
