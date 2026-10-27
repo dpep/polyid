@@ -76,6 +76,28 @@ RSpec.describe "relation lookups" do
       expect(User.where(id: UNKNOWN_UUID)).to be_empty
     end
 
+    it "accepts table-qualified keys" do
+      expect(User.where("users.id" => user.uuid)).to eq([user])
+      expect(User.joins(:account).where("accounts.id" => account.uuid)).to eq([user])
+    end
+
+    it "translates foreign keys and belongs_to associations" do
+      # v7 uuids start "01", which an untranslated integer cast reads as id 1
+      account = create(:account, id: 42)
+      user = create(:user, account:)
+
+      expect(User.where(account_id: account.uuid)).to eq([user])
+      expect(User.where(account: account.uuid)).to eq([user])
+    end
+
+    it "accepts a set" do
+      expect(User.where(id: Set[user.uuid])).to eq([user])
+    end
+
+    it "ignores surrounding whitespace" do
+      expect(User.where(id: " #{user.uuid}\n")).to eq([user])
+    end
+
     it "supports find_by" do
       expect(User.find_by(id: user.uuid)).to eq(user)
     end

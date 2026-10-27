@@ -26,6 +26,9 @@
 - uuid lookups ignore default scopes; the outer query still applies them
 - `PolyId.reset` no longer clears the configured cache store
 - a binary `uuid` primary key is left alone rather than cast as a polyid uuid
+- uuids are translated in table-qualified keys (`"users.id"`), foreign keys
+  (`account_id:`), belongs_to associations (`account:`), and sets, and
+  surrounding whitespace is ignored
 - backfill rejects invalid generated uuids and never overwrites one assigned
   while it runs
 

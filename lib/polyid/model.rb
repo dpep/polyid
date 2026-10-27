@@ -91,7 +91,7 @@ module PolyId
         polyid_required!
         # cast so "1" matches the integer key that pluck returns
         pk_type = type_for_attribute(primary_key)
-        values = Array(values).map { |value| polyid_uuid_like?(value) ? value : pk_type.cast(value) }
+        values = Array(values).map { |value| polyid_normalize_uuid(value) || pk_type.cast(value) }
         ids = values.reject { |value| polyid_uuid_like?(value) || value.blank? }
 
         resolved_ids = PolyId::Cache.fetch_uuids(polyid_cache_name, ids:) do |missing_ids|
@@ -111,15 +111,9 @@ module PolyId
       # nested conditions are translated even when this model isn't polyid
       def polyid_translate_conditions(conditions)
         translated = nil
-        pk = primary_key if polyid?
 
         conditions.each do |key, values|
-          new_values =
-            if values.is_a?(Hash)
-              polyid_associated_model(key)&.polyid_translate_conditions(values)
-            elsif pk && key.to_s == pk
-              polyid_translate_ids(values)
-            end
+          new_values = polyid_translate_condition(key, values)
           next if new_values.nil? || new_values.equal?(values)
 
           translated ||= conditions.dup
@@ -151,29 +145,56 @@ module PolyId
         PolyId.generate_uuid(polyid_uuid_generator || PolyId.uuid_generator)
       end
 
+      def polyid_translate_ids(values)
+        if values.is_a?(Array) || values.is_a?(Set)
+          return values.none? { |value| polyid_uuid_like?(value) } ? values : ids_for(values.to_a)
+        end
+
+        polyid_uuid_like?(values) ? id_for(values) : values
+      end
+
       private
 
       # judged by shape, not RFC validity: a non-RFC uuid passed through as an id
       # would be integer-cast ("8f47..." => 8) and match an unrelated row
       def polyid_uuid_like?(value)
-        value.is_a?(String) && PolyId::UUID_PATTERN.match?(value)
+        value.is_a?(String) && PolyId::UUID_PATTERN.match?(value.strip)
       end
 
       # uuids are case insensitive; canonicalise so lookups match what is stored
       def polyid_normalize_uuid(value)
-        value.downcase if polyid_uuid_like?(value)
+        value.strip.downcase if polyid_uuid_like?(value)
+      end
+
+      def polyid_translate_condition(key, values)
+        return polyid_associated_model(key)&.polyid_translate_conditions(values) if values.is_a?(Hash)
+        # tuple keys, eg. [:id, :name] => [[1, "a"]], as in_batches builds
+        return if key.is_a?(Array)
+
+        # "users.id" => uuid
+        table, column = key.to_s.split(".", 2)
+        if column
+          model = table == table_name ? self : polyid_associated_model(table)
+          return model&.polyid_translate_conditions(column => values)&.fetch(column)
+        end
+
+        model = key.to_s == primary_key ? self : polyid_referenced_model(key)
+        model.polyid_translate_ids(values) if model&.polyid?
+      end
+
+      # the belongs_to target of an association name or foreign key
+      def polyid_referenced_model(key)
+        reflection = reflect_on_association(key) ||
+          reflect_on_all_associations(:belongs_to).find { |assoc| assoc.foreign_key.to_s == key.to_s }
+        return unless reflection&.belongs_to? && !reflection.polymorphic?
+
+        reflection.klass
       end
 
       def polyid_required!
         raise ArgumentError, "#{name} is not configured with polyid" unless polyid?
       end
 
-      def polyid_translate_ids(values)
-        return ids_for(values) if values.is_a?(Array) && values.any? { |value| polyid_uuid_like?(value) }
-        return id_for(values) if polyid_uuid_like?(values)
-
-        values
-      end
 
       # mirrors ActiveRecord::TableMetadata#associated_table
       def polyid_associated_model(key)
