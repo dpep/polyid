@@ -21,6 +21,24 @@ RSpec.describe PolyId do
     end
   end
 
+  describe ".generate_uuid" do
+    it "generates v7 by default" do
+      expect(described_class.generate_uuid[14]).to eq("7")
+    end
+
+    it "generates v4 on request" do
+      expect(described_class.generate_uuid(:v4)[14]).to eq("4")
+    end
+
+    it "calls a custom generator" do
+      expect(described_class.generate_uuid(-> { "custom" })).to eq("custom")
+    end
+
+    it "rejects an unknown generator" do
+      expect { described_class.generate_uuid(:v9) }.to raise_error(ArgumentError, /unsupported/)
+    end
+  end
+
   describe ".uuid?" do
     subject(:uuid?) { described_class.uuid?(value) }
 
