@@ -25,7 +25,7 @@ module PolyId
       validate :polyid_validate_uuid_immutable
       # a rolled back id can be reused, so only cache what is committed
       after_commit :polyid_warm_cache, on: %i[create update]
-      after_commit :polyid_evict_cache, on: :destroy
+      after_destroy :polyid_evict_cache
     end
 
     class_methods do
@@ -161,6 +161,13 @@ module PolyId
         values.equal?(args) ? ids : [ids]
       end
 
+      # rows read in a transaction may never commit.  a non-joinable transaction,
+      # eg. transactional tests, commits each nested one's callbacks itself
+      def polyid_after_commit(&)
+        transaction = with_connection(&:current_transaction)
+        transaction.joinable? ? transaction.after_commit(&) : yield
+      end
+
       # an unresolved uuid must match nothing, not fall through to an integer cast
       # or become a NULL that matches rows with no foreign key
       def polyid_translate_ids(values)
@@ -210,13 +217,6 @@ module PolyId
         return unless reflection&.belongs_to? && !reflection.polymorphic?
 
         reflection.klass
-      end
-
-      # rows read in a transaction may never commit.  a non-joinable transaction,
-      # eg. transactional tests, commits each nested one's callbacks itself
-      def polyid_after_commit(&)
-        transaction = with_connection(&:current_transaction)
-        transaction.joinable? ? transaction.after_commit(&) : yield
       end
 
       def polyid_required!
@@ -292,17 +292,21 @@ module PolyId
       cache_polyid
     end
 
+    # queued on the transaction, not a record after_commit: those run first, so a
+    # lookup's deferred write made earlier in the transaction would land after it
     def polyid_evict_cache
       return unless self.class.polyid?
 
       id = public_send(self.class.primary_key)
       uuid = public_send(self.class.polyid_uuid_attribute)
 
-      PolyId::Cache.delete_multi(
-        self.class.polyid_cache_name,
-        ids: id.present? ? [id] : [],
-        uuids: uuid.present? ? [uuid] : [],
-      )
+      self.class.polyid_after_commit do
+        PolyId::Cache.delete_multi(
+          self.class.polyid_cache_name,
+          ids: id.present? ? [id] : [],
+          uuids: uuid.present? ? [uuid] : [],
+        )
+      end
     end
 
     # a binary column casts bad input to nil, a string column keeps it verbatim
