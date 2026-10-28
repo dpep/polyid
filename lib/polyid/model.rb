@@ -208,6 +208,8 @@ module PolyId
         reflection = reflect_on_association(key) ||
           reflect_on_all_associations(:belongs_to).find { |assoc| assoc.foreign_key.to_s == key.to_s }
         return unless reflection&.belongs_to? && !reflection.polymorphic?
+        # eg. primary_key: :uuid, where the foreign key already holds uuids
+        return unless reflection.association_primary_key.to_s == reflection.klass.primary_key
 
         reflection.klass
       end
