@@ -187,10 +187,17 @@ module PolyId
         value.strip.downcase if polyid_uuid_like?(value)
       end
 
+      def polyid_uuid_input?(values)
+        return values.any? { |value| polyid_uuid_like?(value) } if values.is_a?(Array) || values.is_a?(Set)
+
+        polyid_uuid_like?(values)
+      end
+
       def polyid_translate_condition(key, values)
         return polyid_associated_model(key)&.polyid_translate_conditions(values) if values.is_a?(Hash)
-        # tuple keys, eg. [:id, :name] => [[1, "a"]], as in_batches builds
-        return if key.is_a?(Array)
+        # tuple keys, eg. [:id, :name] => [[1, "a"]], as in_batches builds.  checking
+        # the value first spares resolving association classes for every key
+        return if key.is_a?(Array) || !polyid_uuid_input?(values)
 
         # "users.id" => uuid
         table, column = key.to_s.split(".", 2)
