@@ -161,12 +161,17 @@ module PolyId
         values.equal?(args) ? ids : [ids]
       end
 
+      # an unresolved uuid must match nothing, not fall through to an integer cast
+      # or become a NULL that matches rows with no foreign key
       def polyid_translate_ids(values)
         if values.is_a?(Array) || values.is_a?(Set)
-          return values.none? { |value| polyid_uuid_like?(value) } ? values : ids_for(values.to_a)
+          return values if values.none? { |value| polyid_uuid_like?(value) }
+
+          values = values.to_a
+          return values.zip(ids_for(values)).reject { |value, id| id.nil? && polyid_uuid_like?(value) }.map(&:last)
         end
 
-        polyid_uuid_like?(values) ? id_for(values) : values
+        polyid_uuid_like?(values) ? id_for(values) || [] : values
       end
 
       private
