@@ -139,6 +139,14 @@ RSpec.describe "relation lookups" do
       expect(User.find_by(params)).to eq(user)
     end
 
+    it "creates with translated foreign keys" do
+      account = create(:account, id: 50)
+
+      expect(User.find_or_create_by!(account_id: account.uuid).account).to eq(account)
+      expect(User.create_or_find_by!(account_id: account.uuid, uuid: SecureRandom.uuid).account).to eq(account)
+      expect(User.find_or_initialize_by(account_id: account.uuid).account).to eq(account)
+    end
+
     it "accepts a set" do
       expect(User.where(id: Set[user.uuid])).to eq([user])
     end
