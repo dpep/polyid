@@ -39,6 +39,7 @@
   `exists?`, and `delete`, instead of falling through to an integer id
 - a foreign key onto the uuid itself (`belongs_to primary_key: :uuid`) is left
   untranslated
+- uuids in permitted params passed to `where` or `find_by` are translated
 - a database error during auto-detection no longer disables polyid for that
   model until restart
 - backfill rejects invalid generated uuids and never overwrites one assigned
