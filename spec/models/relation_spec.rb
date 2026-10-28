@@ -123,6 +123,10 @@ RSpec.describe "relation lookups" do
       expect(Member.where(org: org.uuid)).to eq([member])
     end
 
+    it "does not resolve associations for values that aren't uuids" do
+      expect(Gadget.where(thing_id: 3)).to be_empty
+    end
+
     it "accepts a set" do
       expect(User.where(id: Set[user.uuid])).to eq([user])
     end

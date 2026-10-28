@@ -64,6 +64,10 @@ ActiveRecord::Schema.define do
     t.string :org_uuid
   end
 
+  create_table :gadgets, force: true do |t|
+    t.references :thing
+  end
+
   create_table :animals, force: true do |t|
     t.string :type
     t.string :uuid, null: false, index: { unique: true }
@@ -97,6 +101,10 @@ end
 
 class Member < ActiveRecord::Base
   belongs_to :org, primary_key: :uuid, foreign_key: :org_uuid, optional: true
+end
+
+class Gadget < ActiveRecord::Base
+  belongs_to :thing, class_name: "NoSuchThing", optional: true
 end
 
 class Animal < ActiveRecord::Base
