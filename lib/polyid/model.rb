@@ -92,8 +92,10 @@ module PolyId
         ids = values.reject { |value| polyid_uuid_like?(value) || value.blank? }
 
         resolved_ids = PolyId::Cache.fetch_uuids(polyid_cache_name, ids:, defer: method(:polyid_after_commit)) do |missing_ids|
+          # a row with no uuid yet (or a junk one) has nothing worth caching
           unscoped.where(primary_key => missing_ids)
             .pluck(primary_key, polyid_uuid_attribute).to_h
+            .select { |_id, uuid| PolyId.uuid?(uuid) }
         end
 
         values.map do |value|
