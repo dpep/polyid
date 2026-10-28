@@ -105,9 +105,7 @@ RSpec.describe "relation lookups" do
       end
 
       it "deletes nothing" do
-        User.delete(unknown)
-
-        expect(User.exists?(user.id)).to be true
+        expect { User.delete(unknown) }.not_to change(User, :count)
       end
 
       it "does not match rows with no foreign key" do
