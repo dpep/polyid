@@ -37,6 +37,8 @@
 - `find` with an unknown uuid names it in the RecordNotFound message
 - a uuid that resolves to nothing matches nothing in `where`, `find_by`,
   `exists?`, and `delete`, instead of falling through to an integer id
+- a foreign key onto the uuid itself (`belongs_to primary_key: :uuid`) is left
+  untranslated
 - a database error during auto-detection no longer disables polyid for that
   model until restart
 - backfill rejects invalid generated uuids and never overwrites one assigned

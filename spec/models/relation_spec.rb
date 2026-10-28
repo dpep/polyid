@@ -115,6 +115,14 @@ RSpec.describe "relation lookups" do
       end
     end
 
+    it "leaves a foreign key onto the uuid alone" do
+      org = Org.create!
+      member = Member.create!(org:)
+
+      expect(Member.where(org_uuid: org.uuid)).to eq([member])
+      expect(Member.where(org: org.uuid)).to eq([member])
+    end
+
     it "accepts a set" do
       expect(User.where(id: Set[user.uuid])).to eq([user])
     end

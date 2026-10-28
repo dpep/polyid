@@ -54,6 +54,16 @@ ActiveRecord::Schema.define do
     t.binary :uuid, limit: 16, primary_key: true
   end
 
+  create_table :orgs, force: true do |t|
+    t.string :uuid, null: false, index: { unique: true }
+  end
+
+  # a foreign key onto the uuid rather than the id
+  create_table :members, force: true do |t|
+    t.string :uuid, null: false, index: { unique: true }
+    t.string :org_uuid
+  end
+
   create_table :animals, force: true do |t|
     t.string :type
     t.string :uuid, null: false, index: { unique: true }
@@ -80,6 +90,13 @@ class LegacyUser < ActiveRecord::Base
 end
 
 class Token < ActiveRecord::Base
+end
+
+class Org < ActiveRecord::Base
+end
+
+class Member < ActiveRecord::Base
+  belongs_to :org, primary_key: :uuid, foreign_key: :org_uuid, optional: true
 end
 
 class Animal < ActiveRecord::Base
