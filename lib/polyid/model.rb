@@ -148,7 +148,9 @@ module PolyId
 
       # an unresolved uuid would reach ActiveRecord as nil, hiding it from the error
       def polyid_translate_find_args(args)
-        values = args.length == 1 && args.first.is_a?(Array) ? args.first : args
+        wrapped = args.length == 1 && args.first.is_a?(Array)
+        # ActiveRecord flattens too, eg. find(1, [2, 3])
+        values = args.flatten
         ids = ids_for(values)
 
         missing = values.zip(ids).find { |value, id| id.nil? && polyid_uuid_like?(value) }&.first
@@ -158,7 +160,7 @@ module PolyId
           )
         end
 
-        values.equal?(args) ? ids : [ids]
+        wrapped ? [ids] : ids
       end
 
       # an unresolved uuid must match nothing, not fall through to an integer cast
