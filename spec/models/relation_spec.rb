@@ -140,6 +140,19 @@ RSpec.describe "relation lookups" do
       expect(User.find_by(params)).to eq(user)
     end
 
+    it "creates through an association given its uuid" do
+      account = create(:account, id: 50)
+
+      expect(User.find_or_create_by!(account: account.uuid, name: "a").account).to eq(account)
+      expect(User.find_or_initialize_by(account: account.uuid, name: "b").account).to eq(account)
+    end
+
+    it "still creates through an association given a record" do
+      account = create(:account, id: 50)
+
+      expect(User.find_or_create_by!(account:).account).to eq(account)
+    end
+
     it "creates with translated foreign keys" do
       account = create(:account, id: 50)
 

@@ -28,7 +28,17 @@ module PolyId
     private
 
     def polyid_translate_attributes(attributes)
-      attributes.is_a?(Hash) ? klass.polyid_translate_conditions(attributes) : attributes
+      return attributes unless attributes.is_a?(Hash)
+
+      klass.polyid_translate_conditions(attributes).to_h do |key, value|
+        [value.equal?(attributes[key]) ? key : polyid_foreign_key(key), value]
+      end
+    end
+
+    # a create can't assign an id to the association itself
+    def polyid_foreign_key(key)
+      reflection = klass.reflect_on_association(key)
+      reflection&.belongs_to? ? reflection.foreign_key : key
     end
   end
 end
