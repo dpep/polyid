@@ -105,6 +105,12 @@ RSpec.describe "relation lookups" do
         expect(User.exists?(unknown)).to be false
       end
 
+      it "refuses to create with it" do
+        expect { User.find_or_create_by!(account_id: unknown) }.to raise_error(ActiveRecord::RecordNotFound, /#{unknown}/)
+        expect { User.find_or_initialize_by(account_id: unknown) }.to raise_error(ActiveRecord::RecordNotFound)
+        expect(User.where(account_id: nil)).to be_empty
+      end
+
       it "deletes nothing" do
         expect { User.delete(unknown) }.not_to change(User, :count)
       end
