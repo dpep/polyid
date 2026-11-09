@@ -267,7 +267,7 @@ module PolyId
         return if polyid_uuid_attribute_raw.blank? && primary_key == uuid_attribute
 
         decorate_attributes([uuid_attribute]) do |_name, subtype|
-          PolyId::BinaryUuidType.new if subtype.type == :binary
+          PolyId::BinaryUuidType.new(subtype) if subtype.type == :binary
         end
       end
     end

@@ -1,10 +1,15 @@
 module PolyId
   class BinaryUuidType < ActiveModel::Type::Binary
+    def initialize(subtype = nil)
+      super()
+      @subtype = subtype
+    end
+
     def cast(value)
       return if value.nil?
 
       if binary_uuid_bytes?(value)
-        deserialize(value)
+        unpack_uuid(value)
       else
         normalize_uuid(value)
       end
@@ -25,13 +30,19 @@ module PolyId
     def deserialize(value)
       return if value.nil?
 
+      # the adapter's own encoding, eg. postgres reads bytea as escaped text
+      value = @subtype.deserialize(value) if @subtype
+      unpack_uuid(value)
+    end
+
+    private
+
+    def unpack_uuid(value)
       bytes = value.is_a?(Data) ? value.to_s : value
       return bytes unless binary_uuid_bytes?(bytes)
 
       bytes.unpack("H8H4H4H4H12").join("-")
     end
-
-    private
 
     def normalize_uuid(value)
       uuid = value.to_s
