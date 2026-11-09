@@ -6,6 +6,7 @@
 - remove unused PolyId::Cache.read and PolyId::Cache.delete
 - translation helpers raise on models not configured with polyid
 - binary uuid columns cast invalid input to nil instead of raising
+- binary uuid columns read correctly on postgres
 - validate uuid format, rejecting invalid input instead of replacing it
 - uuids are write-once, so legacy rows can be backfilled
 - `save(validate: false)` and custom validation contexts still generate a uuid

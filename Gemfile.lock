@@ -109,7 +109,7 @@ DEPENDENCIES
   rspec (>= 3.10)
   rspec-debugging
   rspec-uuid (>= 0.6)
-  simplecov (>= 0.22)
+  simplecov (>= 1)
   sqlite3 (>= 1.4)
 
 CHECKSUMS
