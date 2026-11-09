@@ -10,6 +10,24 @@ RSpec.describe PolyId::BinaryUuidType do
     binary_uuid.setbyte(6, binary_uuid.getbyte(6) & 0b0000_1111)
   end
 
+  context "with an adapter that encodes binary, as postgres does" do
+    subject(:type) { described_class.new(bytea) }
+
+    let(:bytea) do
+      Class.new(ActiveModel::Type::Binary) do
+        def deserialize(value) = [value.delete_prefix("\\x")].pack("H*")
+      end.new
+    end
+
+    it "decodes before unpacking" do
+      expect(type.deserialize("\\x#{uuid.delete("-")}")).to eq(uuid)
+    end
+
+    it "casts raw bytes without decoding them" do
+      expect(type.cast(binary_uuid)).to eq(uuid)
+    end
+  end
+
   describe "#cast" do
     it "returns nil for nil" do
       expect(type.cast(nil)).to be_nil
