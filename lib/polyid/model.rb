@@ -275,6 +275,14 @@ module PolyId
       end
     end
 
+    # a copy is a new row, so it needs its own uuid
+    def initialize_dup(other)
+      super
+
+      uuid_attribute = self.class.polyid_uuid_attribute
+      self[uuid_attribute] = nil if self.class.polyid? && has_attribute?(uuid_attribute)
+    end
+
     private
 
     def polyid_assign_uuid

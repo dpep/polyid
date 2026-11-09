@@ -11,6 +11,7 @@
 - uuids are write-once, so legacy rows can be backfilled
 - `save(validate: false)` and custom validation contexts still generate a uuid
 - remove PolyId.cache_binary_uuids
+- `dup` clears the uuid, so the copy gets its own
 - add PolyId.cache_ttl, defaulting to 30 days.  set to nil to never expire
 - translation is a real read-through cache, resolving misses in one bulk write
 - loading records no longer writes to the cache.  lookups populate it instead,

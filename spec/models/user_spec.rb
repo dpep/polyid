@@ -39,6 +39,19 @@ RSpec.describe User do
       expect(user.reload.uuid).to eq(uuid)
     end
 
+    it "gives a dup its own uuid" do
+      user = create(:user)
+      copy = user.dup
+      copy.save!
+
+      expect(copy.uuid).to be_a_uuid
+      expect(copy.uuid).not_to eq(user.uuid)
+    end
+
+    it "leaves models without polyid alone when duped" do
+      expect(Gadget.new(thing_id: 3).dup.thing_id).to eq(3)
+    end
+
     it "still generates a uuid when none is given" do
       expect(User.create!(uuid: nil).uuid).to be_a_uuid
       expect(User.create!.uuid).to be_a_uuid
