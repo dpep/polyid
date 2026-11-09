@@ -25,7 +25,7 @@ module PolyId
       validate :polyid_validate_uuid_immutable
       # a rolled back id can be reused, so only cache what is committed
       after_commit :polyid_warm_cache, on: %i[create update]
-      after_commit :polyid_evict_cache, on: :destroy
+      after_destroy :polyid_evict_cache
     end
 
     class_methods do
@@ -163,12 +163,24 @@ module PolyId
         values.equal?(args) ? ids : [ids]
       end
 
+      # rows read in a transaction may never commit.  a non-joinable transaction,
+      # eg. transactional tests, commits each nested one's callbacks itself
+      def polyid_after_commit(&)
+        transaction = with_connection(&:current_transaction)
+        transaction.joinable? ? transaction.after_commit(&) : yield
+      end
+
+      # an unresolved uuid must match nothing, not fall through to an integer cast
+      # or become a NULL that matches rows with no foreign key
       def polyid_translate_ids(values)
         if values.is_a?(Array) || values.is_a?(Set)
-          return values.none? { |value| polyid_uuid_like?(value) } ? values : ids_for(values.to_a)
+          return values if values.none? { |value| polyid_uuid_like?(value) }
+
+          values = values.to_a
+          return values.zip(ids_for(values)).reject { |value, id| id.nil? && polyid_uuid_like?(value) }.map(&:last)
         end
 
-        polyid_uuid_like?(values) ? id_for(values) : values
+        polyid_uuid_like?(values) ? id_for(values) || [] : values
       end
 
       private
@@ -184,10 +196,17 @@ module PolyId
         value.strip.downcase if polyid_uuid_like?(value)
       end
 
+      def polyid_uuid_input?(values)
+        return values.any? { |value| polyid_uuid_like?(value) } if values.is_a?(Array) || values.is_a?(Set)
+
+        polyid_uuid_like?(values)
+      end
+
       def polyid_translate_condition(key, values)
         return polyid_associated_model(key)&.polyid_translate_conditions(values) if values.is_a?(Hash)
-        # tuple keys, eg. [:id, :name] => [[1, "a"]], as in_batches builds
-        return if key.is_a?(Array)
+        # tuple keys, eg. [:id, :name] => [[1, "a"]], as in_batches builds.  checking
+        # the value first spares resolving association classes for every key
+        return if key.is_a?(Array) || !polyid_uuid_input?(values)
 
         # "users.id" => uuid
         table, column = key.to_s.split(".", 2)
@@ -205,15 +224,10 @@ module PolyId
         reflection = reflect_on_association(key) ||
           reflect_on_all_associations(:belongs_to).find { |assoc| assoc.foreign_key.to_s == key.to_s }
         return unless reflection&.belongs_to? && !reflection.polymorphic?
+        # eg. primary_key: :uuid, where the foreign key already holds uuids
+        return unless reflection.association_primary_key.to_s == reflection.klass.primary_key
 
         reflection.klass
-      end
-
-      # rows read in a transaction may never commit.  a non-joinable transaction,
-      # eg. transactional tests, commits each nested one's callbacks itself
-      def polyid_after_commit(&)
-        transaction = with_connection(&:current_transaction)
-        transaction.joinable? ? transaction.after_commit(&) : yield
       end
 
       def polyid_required!
@@ -289,17 +303,21 @@ module PolyId
       cache_polyid
     end
 
+    # queued on the transaction, not a record after_commit: those run first, so a
+    # lookup's deferred write made earlier in the transaction would land after it
     def polyid_evict_cache
       return unless self.class.polyid?
 
       id = public_send(self.class.primary_key)
       uuid = public_send(self.class.polyid_uuid_attribute)
 
-      PolyId::Cache.delete_multi(
-        self.class.polyid_cache_name,
-        ids: id.present? ? [id] : [],
-        uuids: uuid.present? ? [uuid] : [],
-      )
+      self.class.polyid_after_commit do
+        PolyId::Cache.delete_multi(
+          self.class.polyid_cache_name,
+          ids: id.present? ? [id] : [],
+          uuids: uuid.present? ? [uuid] : [],
+        )
+      end
     end
 
     # a binary column casts bad input to nil, a string column keeps it verbatim
