@@ -274,6 +274,11 @@ module PolyId
 
     private
 
+    # false after a partial select, eg. select(:id), where reading it would raise
+    def polyid_uuid_loaded?
+      self.class.polyid? && has_attribute?(self.class.polyid_uuid_attribute)
+    end
+
     def polyid_assign_uuid
       return unless self.class.polyid?
 
@@ -287,7 +292,7 @@ module PolyId
 
     # lookups downcase, so a string column must store lowercase to be found
     def polyid_canonicalise_uuid
-      return unless self.class.polyid?
+      return unless polyid_uuid_loaded?
 
       uuid_attribute = self.class.polyid_uuid_attribute
       value = public_send(uuid_attribute)
@@ -311,7 +316,7 @@ module PolyId
       return unless self.class.polyid?
 
       id = public_send(self.class.primary_key)
-      uuid = public_send(self.class.polyid_uuid_attribute)
+      uuid = public_send(self.class.polyid_uuid_attribute) if polyid_uuid_loaded?
 
       self.class.polyid_after_commit do
         PolyId::Cache.delete_multi(
@@ -324,7 +329,7 @@ module PolyId
 
     # a binary column casts bad input to nil, a string column keeps it verbatim
     def polyid_validate_uuid_format
-      return unless self.class.polyid?
+      return unless polyid_uuid_loaded?
 
       uuid_attribute = self.class.polyid_uuid_attribute
       value = public_send(uuid_attribute)
@@ -342,7 +347,7 @@ module PolyId
 
     # write-once, not read-only: a row predating polyid still needs backfilling
     def polyid_validate_uuid_immutable
-      return unless self.class.polyid?
+      return unless polyid_uuid_loaded?
 
       uuid_attribute = self.class.polyid_uuid_attribute
       return unless persisted?
