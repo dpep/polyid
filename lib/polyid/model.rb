@@ -21,6 +21,9 @@ module PolyId
 
       before_validation :polyid_assign_uuid, on: :create
       before_validation :polyid_canonicalise_uuid
+      # for save(validate: false) and custom contexts, which skip the above
+      before_create :polyid_assign_uuid
+      before_save :polyid_canonicalise_uuid
       validate :polyid_validate_uuid_format
       validate :polyid_validate_uuid_immutable
       # a rolled back id can be reused, so only cache what is committed
