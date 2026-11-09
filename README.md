@@ -9,7 +9,6 @@ auto-incrementing primary key and a UUID column. Look records up by either one;
 
 ## Install
 
-Requires Ruby 3.3+ and ActiveRecord 7.2+.
 
 ```ruby
 gem "polyid"
