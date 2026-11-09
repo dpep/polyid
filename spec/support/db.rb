@@ -106,6 +106,7 @@ end
 
 class Gadget < ActiveRecord::Base
   belongs_to :thing, class_name: "NoSuchThing", optional: true
+  belongs_to :maker, class_name: "User", foreign_key: :thing_id, optional: true
 end
 
 class Animal < ActiveRecord::Base

@@ -34,6 +34,8 @@
 - uuids are translated in table-qualified keys (`"users.id"`), foreign keys
   (`account_id:`), belongs_to associations (`account:`), and sets, and
   surrounding whitespace is ignored
+- uuids are translated when a join is keyed by a table whose name differs from
+  the association's
 - `find` with an unknown uuid names it in the RecordNotFound message
 - a uuid that resolves to nothing matches nothing in `where`, `find_by`,
   `exists?`, and `delete`, instead of falling through to an integer id
