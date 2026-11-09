@@ -116,6 +116,38 @@ RSpec.describe "relation lookups" do
       end
     end
 
+    it "leaves a foreign key onto the uuid alone" do
+      org = Org.create!
+      member = Member.create!(org:)
+
+      expect(Member.where(org_uuid: org.uuid)).to eq([member])
+      expect(Member.where(org: org.uuid)).to eq([member])
+    end
+
+    it "does not resolve associations for values that aren't uuids" do
+      expect(Gadget.where(thing_id: 3)).to be_empty
+    end
+
+    it "accepts permitted params" do
+      # stands in for ActionController::Parameters
+      params = Class.new do
+        def initialize(conditions) = @conditions = conditions
+        def permitted? = true
+        def to_h = @conditions
+      end.new("id" => user.uuid)
+
+      expect(User.where(params)).to eq([user])
+      expect(User.find_by(params)).to eq(user)
+    end
+
+    it "creates with translated foreign keys" do
+      account = create(:account, id: 50)
+
+      expect(User.find_or_create_by!(account_id: account.uuid).account).to eq(account)
+      expect(User.create_or_find_by!(account_id: account.uuid, uuid: SecureRandom.uuid).account).to eq(account)
+      expect(User.find_or_initialize_by(account_id: account.uuid).account).to eq(account)
+    end
+
     it "accepts a set" do
       expect(User.where(id: Set[user.uuid])).to eq([user])
     end

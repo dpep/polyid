@@ -202,6 +202,16 @@ RSpec.describe PolyId::Cache do
     expect(cache.read("polyid/User/#{user.id}")).to eq(user.uuid)
   end
 
+  it "does not cache a row that has no uuid yet" do
+    account = create(:account)
+    account.update_columns(uuid: nil)
+    cache.clear
+
+    expect(Account.uuid_for(account.id)).to be_nil
+    expect(cache.read("polyid/Account/uuid:")).to be_nil
+    expect(described_class.read_multi(Account.name, ids: [account.id])[:ids]).to be_empty
+  end
+
   it "does not cache a record whose transaction rolls back" do
     user = nil
     User.transaction(requires_new: true) do
@@ -222,6 +232,28 @@ RSpec.describe PolyId::Cache do
     end
 
     expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(ids: {}, uuids: {})
+  end
+
+  it "evicts a record looked up and destroyed in the same transaction" do
+    user = create(:user)
+    cache.clear
+
+    User.transaction(requires_new: true) do
+      User.find(user.uuid).destroy!
+    end
+
+    expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(ids: {}, uuids: {})
+  end
+
+  it "keeps the mapping when a destroy rolls back" do
+    user = create(:user)
+
+    User.transaction(requires_new: true) do
+      user.destroy!
+      raise ActiveRecord::Rollback
+    end
+
+    expect(described_class.read_multi(model_name, uuids: [user.uuid])[:uuids]).to eq(user.uuid => user.id)
   end
 
   it "caches lookups made in a transaction once it commits" do

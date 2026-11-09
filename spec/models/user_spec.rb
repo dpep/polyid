@@ -46,6 +46,7 @@ RSpec.describe User do
 
       expect(User.find(first.id, second.uuid)).to contain_exactly(first, second)
       expect(User.find([first.uuid, second.id])).to contain_exactly(first, second)
+      expect(User.find(first.uuid, [second.uuid])).to contain_exactly(first, second)
     end
 
     it "raises when a uuid does not resolve to a record" do
