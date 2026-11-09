@@ -17,6 +17,28 @@ RSpec.describe User do
       }.to raise_error(ActiveRecord::RecordInvalid, /Uuid is invalid/)
     end
 
+    it "generates a uuid when validations don't run" do
+      user = User.new
+      user.save!(validate: false)
+
+      expect(user.reload.uuid).to be_a_uuid
+    end
+
+    it "generates a uuid under a custom validation context" do
+      user = User.new
+      user.save!(context: :signup)
+
+      expect(user.reload.uuid).to be_a_uuid
+    end
+
+    it "stores lowercase when validations don't run" do
+      uuid = SecureRandom.uuid
+      user = User.new(uuid: uuid.upcase)
+      user.save!(validate: false)
+
+      expect(user.reload.uuid).to eq(uuid)
+    end
+
     it "still generates a uuid when none is given" do
       expect(User.create!(uuid: nil).uuid).to be_a_uuid
       expect(User.create!.uuid).to be_a_uuid

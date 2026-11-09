@@ -9,6 +9,7 @@
 - binary uuid columns read correctly on postgres
 - validate uuid format, rejecting invalid input instead of replacing it
 - uuids are write-once, so legacy rows can be backfilled
+- `save(validate: false)` and custom validation contexts still generate a uuid
 - remove PolyId.cache_binary_uuids
 - add PolyId.cache_ttl, defaulting to 30 days.  set to nil to never expire
 - translation is a real read-through cache, resolving misses in one bulk write
