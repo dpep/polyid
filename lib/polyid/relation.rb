@@ -28,7 +28,23 @@ module PolyId
     private
 
     def polyid_translate_attributes(attributes)
-      attributes.is_a?(Hash) ? klass.polyid_translate_conditions(attributes) : attributes
+      attributes = sanitize_forbidden_attributes(attributes)
+      return attributes unless attributes.is_a?(Hash)
+
+      translated = klass.polyid_translate_conditions(attributes)
+      # "match nothing" can't be written to a column, and would store a NULL
+      key, value = attributes.find { |name, given| translated[name] == [] && given != [] }
+      raise ActiveRecord::RecordNotFound.new("Couldn't find #{key}=#{value}", klass.name, key, value) if key
+
+      translated.to_h do |name, given|
+        [given.equal?(attributes[name]) ? name : polyid_foreign_key(name), given]
+      end
+    end
+
+    # a create can't assign an id to the association itself
+    def polyid_foreign_key(key)
+      reflection = klass.reflect_on_association(key)
+      reflection&.belongs_to? ? reflection.foreign_key : key
     end
   end
 end

@@ -2,6 +2,21 @@ RSpec.describe "relation lookups" do
   let(:account) { create(:account) }
   let(:user) { create(:user, account:) }
 
+  describe "collection ids" do
+    it "assigns by uuid" do
+      create(:user, id: 123)
+      # integer-casts to 123, so an untranslated value would assign the decoy
+      user = create(:user, id: 777, uuid: "123e4567-e89b-42d3-a456-426614174000")
+      account.user_ids = ["", user.uuid]
+
+      expect(account.reload.users).to eq([user])
+    end
+
+    it "raises for a uuid that resolves to nothing" do
+      expect { account.user_ids = [UNKNOWN_UUID] }.to raise_error(ActiveRecord::RecordNotFound, /#{UNKNOWN_UUID}/)
+    end
+  end
+
   describe "#find" do
     it "finds by uuid through a relation" do
       expect(User.where(name: user.name).find(user.uuid)).to eq(user)
@@ -105,6 +120,12 @@ RSpec.describe "relation lookups" do
         expect(User.exists?(unknown)).to be false
       end
 
+      it "refuses to create with it" do
+        expect { User.find_or_create_by!(account_id: unknown) }.to raise_error(ActiveRecord::RecordNotFound, /#{unknown}/)
+        expect { User.find_or_initialize_by(account_id: unknown) }.to raise_error(ActiveRecord::RecordNotFound)
+        expect(User.where(account_id: nil)).to be_empty
+      end
+
       it "deletes nothing" do
         expect { User.delete(unknown) }.not_to change(User, :count)
       end
@@ -159,6 +180,31 @@ RSpec.describe "relation lookups" do
 
       expect(User.where(params)).to eq([user])
       expect(User.find_by(params)).to eq(user)
+    end
+
+    it "creates through an association given its uuid" do
+      account = create(:account, id: 50)
+
+      expect(User.find_or_create_by!(account: account.uuid, name: "a").account).to eq(account)
+      expect(User.find_or_initialize_by(account: account.uuid, name: "b").account).to eq(account)
+    end
+
+    it "still creates through an association given a record" do
+      account = create(:account, id: 50)
+
+      expect(User.find_or_create_by!(account:).account).to eq(account)
+    end
+
+    it "creates with translated foreign keys from permitted params" do
+      account = create(:account, id: 50)
+      # stands in for ActionController::Parameters
+      params = Class.new do
+        def initialize(attributes) = @attributes = attributes
+        def permitted? = true
+        def to_h = @attributes
+      end.new("account_id" => account.uuid)
+
+      expect(User.find_or_create_by!(params).account).to eq(account)
     end
 
     it "creates with translated foreign keys" do

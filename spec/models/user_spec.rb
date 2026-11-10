@@ -17,9 +17,59 @@ RSpec.describe User do
       }.to raise_error(ActiveRecord::RecordInvalid, /Uuid is invalid/)
     end
 
+    it "generates a uuid when validations don't run" do
+      user = User.new
+      user.save!(validate: false)
+
+      expect(user.reload.uuid).to be_a_uuid
+    end
+
+    it "generates a uuid under a custom validation context" do
+      user = User.new
+      user.save!(context: :signup)
+
+      expect(user.reload.uuid).to be_a_uuid
+    end
+
+    it "stores lowercase when validations don't run" do
+      uuid = SecureRandom.uuid
+      user = User.new(uuid: uuid.upcase)
+      user.save!(validate: false)
+
+      expect(user.reload.uuid).to eq(uuid)
+    end
+
+    it "gives a dup its own uuid" do
+      user = create(:user)
+      copy = user.dup
+      copy.save!
+
+      expect(copy.uuid).to be_a_uuid
+      expect(copy.uuid).not_to eq(user.uuid)
+    end
+
+    it "leaves models without polyid alone when duped" do
+      expect(Gadget.new(thing_id: 3).dup.thing_id).to eq(3)
+    end
+
     it "still generates a uuid when none is given" do
       expect(User.create!(uuid: nil).uuid).to be_a_uuid
       expect(User.create!.uuid).to be_a_uuid
+    end
+  end
+
+  describe "partial selects" do
+    let(:user) { create(:user, name: "a") }
+
+    it "saves without the uuid loaded" do
+      User.select(:id, :name).find(user.id).update!(name: "b")
+
+      expect(user.reload.name).to eq("b")
+    end
+
+    it "destroys without the uuid loaded" do
+      expect(User.select(:id).find(user.id).destroy).to be_destroyed
+      expect(User.exists?(user.id)).to be false
     end
   end
 
@@ -147,6 +197,11 @@ RSpec.describe User do
     it "matches dashed values in scalar and array where clauses" do
       expect(User.where(uuid: user.uuid)).to eq([user])
       expect(User.where(uuid: [user.uuid])).to eq([user])
+    end
+
+    it "does not raise on invalid bytes" do
+      expect(User.where(name: "\xFF abc")).to be_empty
+      expect(PolyId.uuid?("\xFF")).to be false
     end
   end
 end
