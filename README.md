@@ -196,7 +196,9 @@ and destroy callbacks, and wraps `find`, `find_by`, `where`, and the
 `find_or_create_by` family to translate UUIDs. On a model that isn't polyid, the
 callbacks and `find` return early, but they are in the chain. `where` and
 `find_by` still inspect hash conditions, since those can reference a polyid
-model through an association.
+model through an association. Every integer column also gets a copy of its type
+that raises on a UUID-shaped string, though it only refuses one bound for a
+polyid model's id.
 
 With auto-detection on, every model with a `uuid` column becomes polyid,
 including tables that had one before you installed the gem. New rows get a
