@@ -2,7 +2,7 @@ module PolyId
   module Model
     extend ActiveSupport::Concern
 
-    MEMOISED = %i[@polyid_uuid_attribute @polyid_uuid_type_registered].freeze
+    MEMOISED = %i[@polyid_uuid_attribute @polyid_types_registered].freeze
     # what an unresolved uuid translates to: a query matches nothing, a write refuses
     NO_MATCH = [].freeze
 
@@ -48,7 +48,7 @@ module PolyId
 
       # must register before the schema builds its attribute set
       def load_schema
-        polyid_register_uuid_type
+        polyid_register_types
         super
       end
 
@@ -294,11 +294,15 @@ module PolyId
         primary_key.present? && primary_key != uuid_attribute && column_names.include?(uuid_attribute)
       end
 
-      # decorates lazily, so this must not read the schema it is about to load
-      def polyid_register_uuid_type
-        return if @polyid_uuid_type_registered
-        @polyid_uuid_type_registered = true
+      # decorators apply lazily, so these must not read the schema they decorate
+      def polyid_register_types
+        return if @polyid_types_registered
+        @polyid_types_registered = true
 
+        polyid_register_uuid_type
+      end
+
+      def polyid_register_uuid_type
         uuid_attribute = polyid_uuid_attribute_raw.presence ||
           (polyid_setting(:default_uuid_attribute).to_s if polyid_setting(:auto_detect?))
         return unless uuid_attribute
