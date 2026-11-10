@@ -2,6 +2,21 @@ RSpec.describe "relation lookups" do
   let(:account) { create(:account) }
   let(:user) { create(:user, account:) }
 
+  describe "collection ids" do
+    it "assigns by uuid" do
+      create(:user, id: 123)
+      # integer-casts to 123, so an untranslated value would assign the decoy
+      user = create(:user, id: 777, uuid: "123e4567-e89b-42d3-a456-426614174000")
+      account.user_ids = ["", user.uuid]
+
+      expect(account.reload.users).to eq([user])
+    end
+
+    it "raises for a uuid that resolves to nothing" do
+      expect { account.user_ids = [UNKNOWN_UUID] }.to raise_error(ActiveRecord::RecordNotFound, /#{UNKNOWN_UUID}/)
+    end
+  end
+
   describe "#find" do
     it "finds by uuid through a relation" do
       expect(User.where(name: user.name).find(user.uuid)).to eq(user)
