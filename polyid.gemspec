@@ -6,6 +6,11 @@ Gem::Specification.new do |s|
   s.files       = Dir["lib/**/*.{rb,rake}"] + %w[CHANGELOG.md LICENSE.txt README.md]
   s.homepage    = "https://github.com/dpep/polyid"
   s.license     = "MIT"
+  s.metadata    = {
+    "changelog_uri" => "https://github.com/dpep/polyid/blob/main/CHANGELOG.md",
+    "rubygems_mfa_required" => "true",
+    "source_code_uri" => "https://github.com/dpep/polyid",
+  }
   s.name        = "polyid"
   s.summary     = "Use ID and UUID keys interchangeably"
   s.version     = PolyId::VERSION
