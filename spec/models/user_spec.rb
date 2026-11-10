@@ -99,10 +99,14 @@ RSpec.describe User do
       expect(User.find(first.uuid, [second.uuid])).to contain_exactly(first, second)
     end
 
-    it "raises when a uuid does not resolve to a record" do
-      expect {
-        User.find(UNKNOWN_UUID)
-      }.to raise_error(ActiveRecord::RecordNotFound, /=#{Regexp.escape(UNKNOWN_UUID)}/)
+    context "with a uuid that resolves to nothing" do
+      include_context "with a decoy row"
+
+      it "raises" do
+        expect {
+          User.find(UNRESOLVED_UUID)
+        }.to raise_error(ActiveRecord::RecordNotFound, /=#{Regexp.escape(UNRESOLVED_UUID)}/)
+      end
     end
 
     it "does not integer-cast a non-RFC uuid into an unrelated id" do

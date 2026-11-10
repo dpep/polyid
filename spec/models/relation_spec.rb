@@ -12,8 +12,12 @@ RSpec.describe "relation lookups" do
       expect(account.reload.users).to eq([user])
     end
 
-    it "raises for a uuid that resolves to nothing" do
-      expect { account.user_ids = [UNKNOWN_UUID] }.to raise_error(ActiveRecord::RecordNotFound, /#{UNKNOWN_UUID}/)
+    context "with a uuid that resolves to nothing" do
+      include_context "with a decoy row"
+
+      it "raises" do
+        expect { account.user_ids = [UNRESOLVED_UUID] }.to raise_error(ActiveRecord::RecordNotFound, /#{UNRESOLVED_UUID}/)
+      end
     end
   end
 
@@ -48,10 +52,14 @@ RSpec.describe "relation lookups" do
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
 
-    it "raises when the uuid does not exist" do
-      expect {
-        User.all.find(UNKNOWN_UUID)
-      }.to raise_error(ActiveRecord::RecordNotFound, /=#{Regexp.escape(UNKNOWN_UUID)}/)
+    context "with a uuid that resolves to nothing" do
+      include_context "with a decoy row"
+
+      it "raises" do
+        expect {
+          User.all.find(UNRESOLVED_UUID)
+        }.to raise_error(ActiveRecord::RecordNotFound, /=#{Regexp.escape(UNRESOLVED_UUID)}/)
+      end
     end
 
     it "resolves uuids outside the default scope" do
@@ -88,10 +96,6 @@ RSpec.describe "relation lookups" do
       expect(User.where("id" => user.uuid)).to eq([user])
     end
 
-    it "returns nothing when the uuid does not exist" do
-      expect(User.where(id: UNKNOWN_UUID)).to be_empty
-    end
-
     it "accepts table-qualified keys" do
       expect(User.where("users.id" => user.uuid)).to eq([user])
       expect(User.joins(:account).where("accounts.id" => account.uuid)).to eq([user])
@@ -107,33 +111,30 @@ RSpec.describe "relation lookups" do
     end
 
     context "with a uuid that resolves to nothing" do
-      # integer-casts to 190, so a fall-through would match these
-      let(:unknown) { "0190abcd-0000-7000-8000-000000000001" }
-      let!(:account) { create(:account, id: 190) }
-      let!(:user) { create(:user, id: 190, account:) }
+      include_context "with a decoy row"
 
       it "matches nothing rather than an integer-cast id" do
-        expect(User.where(id: unknown)).to be_empty
-        expect(User.find_by(id: unknown)).to be_nil
-        expect(User.where("users.id" => unknown)).to be_empty
-        expect(User.where(account_id: unknown)).to be_empty
-        expect(User.exists?(unknown)).to be false
+        expect(User.where(id: UNRESOLVED_UUID)).to be_empty
+        expect(User.find_by(id: UNRESOLVED_UUID)).to be_nil
+        expect(User.where("users.id" => UNRESOLVED_UUID)).to be_empty
+        expect(User.where(account_id: UNRESOLVED_UUID)).to be_empty
+        expect(User.exists?(UNRESOLVED_UUID)).to be false
       end
 
       it "refuses to create with it" do
-        expect { User.find_or_create_by!(account_id: unknown) }.to raise_error(ActiveRecord::RecordNotFound, /#{unknown}/)
-        expect { User.find_or_initialize_by(account_id: unknown) }.to raise_error(ActiveRecord::RecordNotFound)
+        expect { User.find_or_create_by!(account_id: UNRESOLVED_UUID) }.to raise_error(ActiveRecord::RecordNotFound, /#{UNRESOLVED_UUID}/)
+        expect { User.find_or_initialize_by(account_id: UNRESOLVED_UUID) }.to raise_error(ActiveRecord::RecordNotFound)
         expect(User.where(account_id: nil)).to be_empty
       end
 
       it "deletes nothing" do
-        expect { User.delete(unknown) }.not_to change(User, :count)
+        expect { User.delete(UNRESOLVED_UUID) }.not_to change(User, :count)
       end
 
       it "does not match rows with no foreign key" do
         create(:user, account: nil)
 
-        expect(User.where(account_id: [unknown])).to be_empty
+        expect(User.where(account_id: [UNRESOLVED_UUID])).to be_empty
       end
     end
 
@@ -297,11 +298,12 @@ RSpec.describe "relation lookups" do
 
   context "without polyid" do
     it "leaves lookups untouched" do
-      legacy = LegacyUser.create!(name: "legacy")
+      legacy = LegacyUser.create!(id: 123, name: "legacy")
 
       expect(LegacyUser.all.find(legacy.id)).to eq(legacy)
       expect(LegacyUser.where(id: legacy.id)).to eq([legacy])
-      expect(LegacyUser.where(id: UNKNOWN_UUID)).to be_empty
+      # integer-cast, as ActiveRecord does
+      expect(LegacyUser.where(id: UNRESOLVED_UUID)).to eq([legacy])
     end
   end
 end
