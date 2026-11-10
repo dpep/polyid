@@ -193,6 +193,10 @@ module PolyId
       # the model whose ids a column holds: this one for its primary key, or a
       # belongs_to target for a foreign key or association name
       def polyid_key_target(key)
+        # "users.id"
+        table, column = key.to_s.split(".", 2)
+        return (table == table_name ? self : polyid_associated_model(table))&.polyid_key_target(column) if column
+
         key.to_s == primary_key ? self : polyid_referenced_model(key)
       end
 

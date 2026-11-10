@@ -127,6 +127,16 @@ RSpec.describe "relation lookups" do
         expect(User.where(account_id: nil)).to be_empty
       end
 
+      { account_id: "Account", account: "Account", id: "User", "users.id" => "User" }.each do |key, model|
+        it "names the missing #{model} given #{key.inspect}" do
+          expect { User.find_or_create_by!(key => UNRESOLVED_UUID) }.to raise_error(ActiveRecord::RecordNotFound) { |error|
+            expect([error.message, error.model, error.primary_key, error.id]).to eq(
+              ["Couldn't find #{model} with 'id'=#{UNRESOLVED_UUID}", model, "id", UNRESOLVED_UUID],
+            )
+          }
+        end
+      end
+
       it "deletes nothing" do
         expect { User.delete(UNRESOLVED_UUID) }.not_to change(User, :count)
       end
