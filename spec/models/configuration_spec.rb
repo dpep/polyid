@@ -39,7 +39,12 @@ RSpec.describe "configuration" do
   end
 
   describe "once a model has declared polyid" do
-    before { stub_const("DeclaredUser", Class.new(ActiveRecord::Base) { self.table_name = "users"; polyid }) }
+    before do
+      Class.new(ActiveRecord::Base) do
+        self.table_name = "users"
+        polyid
+      end
+    end
 
     it "refuses settings that are baked into models" do
       expect { PolyId.default_uuid_attribute = :public_id }.to raise_error(PolyId::ConfigurationError)
@@ -67,7 +72,10 @@ RSpec.describe "configuration" do
 
   it "opts a model in under the default uuid attribute when auto-detection is off" do
     PolyId.auto_detect = false
-    model = stub_const("OptedInUser", Class.new(ActiveRecord::Base) { self.table_name = "users"; polyid })
+    model = Class.new(ActiveRecord::Base) do
+      self.table_name = "users"
+      polyid
+    end
 
     expect(model.polyid_uuid_attribute).to eq("uuid")
   end

@@ -18,7 +18,8 @@ module PolyId
     end
 
     included do
-      class_attribute :polyid_uuid_attribute_raw, :polyid_uuid_generator, instance_accessor: false, instance_predicate: false
+      class_attribute :polyid_uuid_attribute_raw, :polyid_uuid_generator,
+        instance_accessor: false, instance_predicate: false
       # written only by the `polyid` macro, which refuses once config is resolved
       private_class_method :polyid_uuid_attribute_raw=, :polyid_uuid_generator=
 
@@ -76,7 +77,9 @@ module PolyId
         uuids = values.filter_map { |value| PolyId.normalize_uuid(value) }
 
         # unscoped: the mapping is global, and the caller's query still applies its scope
-        resolved_uuids = PolyId::Cache.fetch_ids(polyid_cache_name, uuids:, defer: method(:polyid_after_commit)) do |missing_uuids|
+        resolved_uuids = PolyId::Cache.fetch_ids(
+          polyid_cache_name, uuids:, defer: method(:polyid_after_commit),
+        ) do |missing_uuids|
           unscoped.where(polyid_uuid_attribute => missing_uuids)
             .pluck(polyid_uuid_attribute, primary_key).to_h
         end
@@ -98,7 +101,9 @@ module PolyId
         values = Array(values).map { |value| PolyId.normalize_uuid(value) || pk_type.cast(value) }
         ids = values.reject { |value| PolyId.normalize_uuid(value) || value.blank? }
 
-        resolved_ids = PolyId::Cache.fetch_uuids(polyid_cache_name, ids:, defer: method(:polyid_after_commit)) do |missing_ids|
+        resolved_ids = PolyId::Cache.fetch_uuids(
+          polyid_cache_name, ids:, defer: method(:polyid_after_commit),
+        ) do |missing_ids|
           # a row with no uuid yet (or a junk one) has nothing worth caching
           unscoped.where(primary_key => missing_ids)
             .pluck(primary_key, polyid_uuid_attribute).to_h
@@ -255,7 +260,6 @@ module PolyId
         raise ArgumentError, "#{name} is not configured with polyid" unless polyid?
       end
 
-
       # mirrors ActiveRecord::TableMetadata#associated_table
       def polyid_associated_model(key)
         reflection = reflect_on_association(key) || reflect_on_association(key.to_s.singularize)
@@ -297,6 +301,7 @@ module PolyId
       # decorators apply lazily, so these must not read the schema they decorate
       def polyid_register_types
         return if @polyid_types_registered
+
         @polyid_types_registered = true
 
         polyid_register_integer_guard

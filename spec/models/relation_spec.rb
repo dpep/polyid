@@ -65,7 +65,9 @@ RSpec.describe "relation lookups" do
 
       { account_id: "Account", account: "Account", id: "User", "users.id" => "User" }.each do |key, model|
         it "names the missing #{model} given #{key.inspect}" do
-          expect { User.find_or_create_by!(key => UNRESOLVED_UUID) }.to raise_error(ActiveRecord::RecordNotFound) { |error|
+          expect {
+            User.find_or_create_by!(key => UNRESOLVED_UUID)
+          }.to raise_error(ActiveRecord::RecordNotFound) { |error|
             expect([error.message, error.model, error.primary_key, error.id]).to eq(
               ["Couldn't find #{model} with 'id'=#{UNRESOLVED_UUID}", model, "id", UNRESOLVED_UUID],
             )

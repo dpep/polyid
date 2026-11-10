@@ -95,7 +95,7 @@ module PolyId
     end
 
     def auto_detect?
-      @auto_detect.nil? ? true : @auto_detect
+      @auto_detect.nil? || @auto_detect
     end
 
     def default_uuid_attribute
