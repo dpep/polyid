@@ -46,6 +46,19 @@ RSpec.describe "configuration" do
     end
   end
 
+  describe "a model's own settings" do
+    it "stay off its instances" do
+      expect(Gadget.new).not_to respond_to(
+        :polyid_uuid_attribute_raw, :polyid_uuid_attribute_raw?, :polyid_uuid_generator, :polyid_uuid_generator?,
+      )
+    end
+
+    it "are only written by declaring polyid" do
+      expect { User.polyid_uuid_attribute_raw = "other" }.to raise_error(NoMethodError)
+      expect { User.polyid_uuid_generator = :v4 }.to raise_error(NoMethodError)
+    end
+  end
+
   it "opts a model in under the default uuid attribute when auto-detection is off" do
     PolyId.auto_detect = false
     model = stub_const("OptedInUser", Class.new(ActiveRecord::Base) { self.table_name = "users"; polyid })
