@@ -39,9 +39,37 @@ RSpec.describe User do
       expect(user.reload.uuid).to eq(uuid)
     end
 
+    it "gives a dup its own uuid" do
+      user = create(:user)
+      copy = user.dup
+      copy.save!
+
+      expect(copy.uuid).to be_a_uuid
+      expect(copy.uuid).not_to eq(user.uuid)
+    end
+
+    it "leaves models without polyid alone when duped" do
+      expect(Gadget.new(thing_id: 3).dup.thing_id).to eq(3)
+    end
+
     it "still generates a uuid when none is given" do
       expect(User.create!(uuid: nil).uuid).to be_a_uuid
       expect(User.create!.uuid).to be_a_uuid
+    end
+  end
+
+  describe "partial selects" do
+    let(:user) { create(:user, name: "a") }
+
+    it "saves without the uuid loaded" do
+      User.select(:id, :name).find(user.id).update!(name: "b")
+
+      expect(user.reload.name).to eq("b")
+    end
+
+    it "destroys without the uuid loaded" do
+      expect(User.select(:id).find(user.id).destroy).to be_destroyed
+      expect(User.exists?(user.id)).to be false
     end
   end
 
