@@ -50,6 +50,8 @@
   model until restart
 - backfill rejects invalid generated uuids and never overwrites one assigned
   while it runs
+- backfill rejects a batch size that isn't a positive integer, rather than
+  silently filling nothing
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade

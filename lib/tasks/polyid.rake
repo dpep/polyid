@@ -6,7 +6,8 @@ namespace :polyid do
     raise ArgumentError, "#{model_name} is not configured with polyid" unless model.polyid?
 
     uuid_attribute = model.polyid_uuid_attribute
-    batch_size = (args[:batch_size] || 1_000).to_i
+    batch_size = Integer(args[:batch_size] || 1_000, exception: false)
+    raise ArgumentError, "batch_size must be a positive integer" unless batch_size&.positive?
     pk = model.primary_key
 
     model.unscoped.where(uuid_attribute => nil).in_batches(of: batch_size).each_record do |record|
