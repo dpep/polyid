@@ -60,6 +60,17 @@ Scopes are still enforced, so `account.users.find(uuid)` raises
 
 SQL strings are left alone: `where("id = ?", uuid)` is not translated.
 
+Writes are translated by the `find_or_create_by` family and by collection id
+writers like `user_ids=`, but not elsewhere. A UUID that reaches a polyid key
+untranslated raises `PolyId::UntranslatedUuidError` rather than being cast to an
+unrelated integer id, so pass ids there:
+
+```ruby
+User.create!(account_id: account.uuid)          # PolyId::UntranslatedUuidError
+User.create!(account_id: account.id)            # ok
+User.update_all(account_id: account.id)         # likewise create_with, insert_all
+```
+
 To translate without loading a record:
 
 ```ruby
