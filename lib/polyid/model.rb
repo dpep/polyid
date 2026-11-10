@@ -190,6 +190,12 @@ module PolyId
         PolyId.normalize_uuid(values) ? id_for(values) || NO_MATCH : values
       end
 
+      # the model whose ids a column holds: this one for its primary key, or a
+      # belongs_to target for a foreign key or association name
+      def polyid_key_target(key)
+        key.to_s == primary_key ? self : polyid_referenced_model(key)
+      end
+
       private
 
       # an IN list, rather than a scalar
@@ -218,7 +224,7 @@ module PolyId
           return PolyId.normalize_uuid(values)
         end
 
-        model = key.to_s == primary_key ? self : polyid_referenced_model(key)
+        model = polyid_key_target(key)
         model.polyid_translate_ids(values) if model&.polyid?
       end
 
