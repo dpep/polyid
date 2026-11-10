@@ -40,6 +40,8 @@
 - a uuid that resolves to nothing matches nothing in `where`, `find_by`,
   `exists?`, and `delete`, instead of falling through to an integer id
 - `find(uuid)` works on a loaded `has_many ..., inverse_of:` association
+- collection id writers like `user_ids=` accept uuids, instead of
+  integer-casting them into unrelated ids
 - a foreign key onto the uuid itself (`belongs_to primary_key: :uuid`) is left
   untranslated
 - uuids in permitted params passed to `where` or `find_by` are translated
