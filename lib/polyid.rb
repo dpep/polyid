@@ -18,13 +18,20 @@ require "polyid/version"
 module PolyId
   UUID_PATTERN = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/i
   DEFAULT_CACHE_TTL = 30.days
+  V7_GENERATORS = [:v7, 7, "v7", "7"].freeze
+  V4_GENERATORS = [:v4, 4, "v4", "4"].freeze
   CONFIG_IVARS = %i[@cache @cache_ttl @uuid_generator @auto_detect @default_uuid_attribute @config_resolved].freeze
 
   class ConfigurationError < StandardError; end
 
   class << self
     # read afresh on every use, so they stay settable
-    attr_writer :cache, :cache_ttl, :uuid_generator
+    attr_writer :cache, :cache_ttl
+
+    def uuid_generator=(generator)
+      validate_uuid_generator!(generator)
+      @uuid_generator = generator
+    end
 
     # memoised into each model, so a late change would silently do nothing
     def auto_detect=(value)
@@ -69,17 +76,21 @@ module PolyId
 
     def generate_uuid(generator = nil)
       generator ||= uuid_generator
+      validate_uuid_generator!(generator)
 
       case generator
-      when Proc
-        generator.call
-      when :v7, 7, "v7", "7"
-        SecureRandom.uuid_v7
-      when :v4, 4, "v4", "4"
-        SecureRandom.uuid
-      else
-        raise ArgumentError, "unsupported uuid generator: #{generator.inspect}"
+      when Proc then generator.call
+      when *V7_GENERATORS then SecureRandom.uuid_v7
+      when *V4_GENERATORS then SecureRandom.uuid
       end
+    end
+
+    # a Proc can only be checked when it's called
+    def validate_uuid_generator!(generator)
+      return if generator.nil? || generator.is_a?(Proc)
+      return if V7_GENERATORS.include?(generator) || V4_GENERATORS.include?(generator)
+
+      raise ArgumentError, "unsupported uuid generator: #{generator.inspect}"
     end
 
     def auto_detect?

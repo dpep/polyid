@@ -59,6 +59,12 @@ RSpec.describe "configuration" do
     end
   end
 
+  it "rejects an unknown uuid generator when declared, not when first used" do
+    expect {
+      Class.new(ActiveRecord::Base) { polyid uuid_generator: :v9 }
+    }.to raise_error(ArgumentError, /unsupported/)
+  end
+
   it "opts a model in under the default uuid attribute when auto-detection is off" do
     PolyId.auto_detect = false
     model = stub_const("OptedInUser", Class.new(ActiveRecord::Base) { self.table_name = "users"; polyid })

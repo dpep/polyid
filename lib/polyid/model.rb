@@ -40,6 +40,7 @@ module PolyId
           raise PolyId::ConfigurationError,
             "#{name} has already resolved its polyid config; declare `polyid` in the class body"
         end
+        PolyId.validate_uuid_generator!(uuid_generator)
 
         self.polyid_uuid_attribute_raw = (uuid_attribute || polyid_setting(:default_uuid_attribute)).to_s
         self.polyid_uuid_generator = uuid_generator
