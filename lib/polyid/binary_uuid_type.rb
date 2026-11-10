@@ -11,7 +11,7 @@ module PolyId
       if binary_uuid_bytes?(value)
         unpack_uuid(value)
       else
-        normalize_uuid(value)
+        valid_uuid(value)
       end
     end
 
@@ -19,7 +19,7 @@ module PolyId
       return if value.nil?
       return super(value) if binary_uuid_bytes?(value)
 
-      uuid = normalize_uuid(value)
+      uuid = valid_uuid(value)
       super(pack_uuid(uuid)) if uuid
     end
 
@@ -44,7 +44,8 @@ module PolyId
       bytes.unpack("H8H4H4H4H12").join("-")
     end
 
-    def normalize_uuid(value)
+    # strict, unlike PolyId.normalize_uuid: only an RFC uuid is stored
+    def valid_uuid(value)
       uuid = value.to_s
       uuid if PolyId.uuid?(uuid)
     end

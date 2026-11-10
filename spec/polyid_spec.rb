@@ -39,6 +39,27 @@ RSpec.describe PolyId do
     end
   end
 
+  describe ".normalize_uuid" do
+    uuid = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    non_rfc = "8f47a7ca-8f4a-0d7b-96e6-60a0b47ddf68"
+
+    {
+      uuid => uuid,
+      uuid.upcase => uuid,
+      " #{uuid}\n" => uuid,
+      non_rfc => non_rfc,
+      uuid.delete("-") => nil,
+      "#{uuid}\xFF" => nil,
+      "abc" => nil,
+      123 => nil,
+      nil => nil,
+    }.each do |value, expected|
+      it "normalizes #{value.inspect} to #{expected.inspect}" do
+        expect(described_class.normalize_uuid(value)).to eq(expected)
+      end
+    end
+  end
+
   describe ".uuid?" do
     subject(:uuid?) { described_class.uuid?(value) }
 

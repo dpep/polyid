@@ -97,6 +97,17 @@ module PolyId
         "polyid is already in use; configure it in an initializer, before models are loaded"
     end
 
+    # lenient, for input: the uuid a caller meant, judged by shape alone, since a
+    # non-RFC uuid passed through as an id would be integer-cast ("8f47..." => 8)
+    def normalize_uuid(value)
+      # strip raises on invalid bytes, eg. from an import
+      return unless value.is_a?(String) && value.valid_encoding?
+
+      uuid = value.strip.downcase
+      uuid if UUID_PATTERN.match?(uuid)
+    end
+
+    # strict, for what is stored
     def uuid?(value)
       return false unless value.is_a?(String) && value.valid_encoding? && UUID_PATTERN.match?(value)
 
