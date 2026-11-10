@@ -169,6 +169,15 @@ RSpec.describe User do
       expect(User.find(user.uuid.upcase)).to eq(user)
     end
 
+    it "matches an uppercase uuid against the uuid column" do
+      user = create(:user)
+
+      expect(User.find_by(uuid: user.uuid.upcase)).to eq(user)
+      expect(User.where(uuid: [user.uuid.upcase])).to eq([user])
+      expect(User.find_or_create_by!(uuid: user.uuid.upcase)).to eq(user)
+      expect(User.create_or_find_by!(uuid: user.uuid.upcase)).to eq(user)
+    end
+
     it "accepts uppercase uuids" do
       user = create(:user)
 
