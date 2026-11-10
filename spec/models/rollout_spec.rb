@@ -28,8 +28,7 @@ RSpec.describe "polyid rollout" do
   end
 
   describe "backfilling a row that predates polyid" do
-    # update_columns skips the callbacks, the same way the rake task does
-    subject(:account) { create(:account).tap { |a| a.update_columns(uuid: nil) }.reload }
+    subject(:account) { create(:account, :awaiting_uuid) }
 
     it "starts without a uuid" do
       expect(account.uuid).to be_nil

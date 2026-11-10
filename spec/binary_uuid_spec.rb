@@ -2,9 +2,7 @@ RSpec.describe Account do
   describe "binary uuid columns" do
     subject(:account) { create(:account) }
 
-    let(:raw_account_uuid) do
-      described_class.connection.select_value(described_class.where(id: account.id).select(:uuid).to_sql)
-    end
+    let(:raw_account_uuid) { raw_value(account, :uuid) }
 
     it "auto-detects polyid and applies the binary uuid type" do
       expect(described_class.polyid?).to be true

@@ -4,14 +4,6 @@ RSpec.describe "polyid:backfill" do
   let(:task_name) { "polyid:backfill" }
   let(:task) { Rake::Task[task_name] }
 
-  def raw_account_uuid(account)
-    Account.connection.select_value(Account.where(id: account.id).select(:uuid).to_sql)
-  end
-
-  def raw_widget_uuid(widget)
-    Widget.connection.select_value(Widget.where(id: widget.id).select(:public_id).to_sql)
-  end
-
   # load once: reloading a file resets its line coverage
   before(:all) do
     @original_application = Rake.application
@@ -24,27 +16,20 @@ RSpec.describe "polyid:backfill" do
 
   before { task.reenable }
 
-  # create! assigns a uuid, so a row that predates polyid has to be made by
-  # clearing the column behind the callbacks
-  def strip_uuid(record, attribute = :uuid)
-    record.update_columns(attribute => nil)
-    record.reload
-  end
-
   it "backfills a row with no uuid" do
-    account = strip_uuid(Account.create!(name: "Legacy"))
+    account = create(:account, :awaiting_uuid)
     expect(account.uuid).to be_nil
 
     task.invoke("Account")
 
     expect(account.reload.uuid).to be_a_uuid
-    expect(raw_account_uuid(account).bytesize).to eq(16)
+    expect(raw_value(account, :uuid).bytesize).to eq(16)
   end
 
   it "leaves existing uuids alone" do
-    account = Account.create!(name: "Existing")
+    account = create(:account)
     original_uuid = account.uuid
-    strip_uuid(Account.create!(name: "Legacy"))
+    create(:account, :awaiting_uuid)
 
     task.invoke("Account")
 
@@ -52,17 +37,17 @@ RSpec.describe "polyid:backfill" do
   end
 
   it "backfills a custom uuid attribute" do
-    widget = strip_uuid(Widget.create!(name: "Legacy"), :public_id)
+    widget = create(:widget, :awaiting_uuid)
     expect(widget.public_id).to be_nil
 
     task.invoke("Widget")
 
     expect(widget.reload.public_id).to be_a_uuid
-    expect(raw_widget_uuid(widget)).to eq(widget.public_id)
+    expect(raw_value(widget, :public_id)).to eq(widget.public_id)
   end
 
   it "accepts a batch size" do
-    3.times { |i| strip_uuid(Account.create!(name: "Legacy #{i}")) }
+    3.times { create(:account, :awaiting_uuid) }
 
     task.invoke("Account", "2")
 
@@ -70,7 +55,7 @@ RSpec.describe "polyid:backfill" do
   end
 
   it "reads a batch size with a leading zero as decimal" do
-    strip_uuid(Account.create!(name: "Legacy"))
+    create(:account, :awaiting_uuid)
 
     expect { task.invoke("Account", "08") }.not_to raise_error
     expect(Account.where(uuid: nil)).to be_empty
@@ -83,7 +68,7 @@ RSpec.describe "polyid:backfill" do
   end
 
   it "refuses to write an invalid generated uuid" do
-    strip_uuid(Account.create!(name: "Legacy"))
+    create(:account, :awaiting_uuid)
     allow(Account).to receive(:polyid_generate_uuid).and_return("nope")
 
     expect {

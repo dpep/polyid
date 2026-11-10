@@ -118,12 +118,7 @@ RSpec.describe "relation lookups" do
     end
 
     it "accepts permitted params" do
-      # stands in for ActionController::Parameters
-      params = Class.new do
-        def initialize(conditions) = @conditions = conditions
-        def permitted? = true
-        def to_h = @conditions
-      end.new("id" => user.uuid)
+      params = permitted_params("id" => user.uuid)
 
       expect(User.where(params)).to eq([user])
       expect(User.find_by(params)).to eq(user)
@@ -144,14 +139,8 @@ RSpec.describe "relation lookups" do
 
     it "creates with translated foreign keys from permitted params" do
       account = create(:account, id: 50)
-      # stands in for ActionController::Parameters
-      params = Class.new do
-        def initialize(attributes) = @attributes = attributes
-        def permitted? = true
-        def to_h = @attributes
-      end.new("account_id" => account.uuid)
 
-      expect(User.find_or_create_by!(params).account).to eq(account)
+      expect(User.find_or_create_by!(permitted_params("account_id" => account.uuid)).account).to eq(account)
     end
 
     it "creates with translated foreign keys" do

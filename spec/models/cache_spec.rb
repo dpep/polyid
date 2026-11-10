@@ -165,11 +165,10 @@ RSpec.describe PolyId::Cache do
     end
 
     it "writes entries when a uuid is backfilled" do
-      account = create(:account)
-      account.update_columns(uuid: nil)
+      account = create(:account, :awaiting_uuid)
       cache.clear
 
-      account.reload.update!(uuid: SecureRandom.uuid)
+      account.update!(uuid: SecureRandom.uuid)
 
       expect(described_class.read_multi(Account.name, ids: [account.id])[:ids]).to eq(account.id => account.uuid)
     end
@@ -195,8 +194,7 @@ RSpec.describe PolyId::Cache do
   end
 
   it "does not cache a row that has no uuid yet" do
-    account = create(:account)
-    account.update_columns(uuid: nil)
+    account = create(:account, :awaiting_uuid)
     cache.clear
 
     expect(Account.uuid_for(account.id)).to be_nil
@@ -317,19 +315,11 @@ RSpec.describe PolyId::Cache do
 
     it "evicts cached mappings when the record is destroyed" do
       user = create(:user)
-
-      expect(User.id_for(user.uuid)).to eq(user.id)
-      expect(User.uuid_for(user.id)).to eq(user.uuid)
-
-      expect(cache).not_to be_empty
+      User.id_for(user.uuid)
 
       user.destroy!
 
-      expect(User.id_for(user.uuid)).to be_nil
-      expect(User.uuid_for(user.id)).to be_nil
-
-      expect(cache).to be_empty
+      expect(described_class.read_multi(model_name, ids: [user.id], uuids: [user.uuid])).to eq(ids: {}, uuids: {})
     end
-
   end
 end

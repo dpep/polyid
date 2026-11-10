@@ -9,6 +9,15 @@ FactoryBot.define do
   # row has, rather than to whichever id its leading digits happen to spell
   sequence(:uuid) { "f#{SecureRandom.uuid[1..]}" }
 
+  # a row that predates polyid.  create assigns a uuid, so clear it behind the
+  # callbacks, as the backfill task writes
+  trait :awaiting_uuid do
+    after(:create) do |record|
+      record.update_columns(record.class.polyid_uuid_attribute => nil)
+      record.reload
+    end
+  end
+
   factory :user do
     name { Faker::Name.name }
     uuid { generate(:uuid) }
