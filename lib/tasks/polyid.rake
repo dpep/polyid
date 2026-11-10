@@ -6,7 +6,8 @@ namespace :polyid do
     raise ArgumentError, "#{model_name} is not configured with polyid" unless model.polyid?
 
     uuid_attribute = model.polyid_uuid_attribute
-    batch_size = Integer(args[:batch_size] || 1_000, exception: false)
+    # base 10, so a leading zero isn't read as octal
+    batch_size = args[:batch_size] ? Integer(args[:batch_size], 10, exception: false) : 1_000
     raise ArgumentError, "batch_size must be a positive integer" unless batch_size&.positive?
     pk = model.primary_key
 

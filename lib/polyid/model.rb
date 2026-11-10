@@ -221,6 +221,13 @@ module PolyId
           return model&.polyid_translate_conditions(column => values)&.fetch(column)
         end
 
+        # stored lowercase, so query lowercase
+        if polyid? && key.to_s == polyid_uuid_attribute
+          return values.map { |value| polyid_normalize_uuid(value) || value } if values.is_a?(Array) || values.is_a?(Set)
+
+          return polyid_normalize_uuid(values)
+        end
+
         model = key.to_s == primary_key ? self : polyid_referenced_model(key)
         model.polyid_translate_ids(values) if model&.polyid?
       end

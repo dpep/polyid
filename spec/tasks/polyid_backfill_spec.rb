@@ -69,6 +69,13 @@ RSpec.describe "polyid:backfill" do
     expect(Account.where(uuid: nil)).to be_empty
   end
 
+  it "reads a batch size with a leading zero as decimal" do
+    strip_uuid(Account.create!(name: "Legacy"))
+
+    expect { task.invoke("Account", "08") }.not_to raise_error
+    expect(Account.where(uuid: nil)).to be_empty
+  end
+
   it "rejects a batch size that isn't a positive integer" do
     expect { task.invoke("Account", "abc") }.to raise_error(ArgumentError, /batch_size/)
     task.reenable
