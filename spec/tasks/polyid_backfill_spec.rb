@@ -69,6 +69,12 @@ RSpec.describe "polyid:backfill" do
     expect(Account.where(uuid: nil)).to be_empty
   end
 
+  it "rejects a batch size that isn't a positive integer" do
+    expect { task.invoke("Account", "abc") }.to raise_error(ArgumentError, /batch_size/)
+    task.reenable
+    expect { task.invoke("Account", "0") }.to raise_error(ArgumentError, /batch_size/)
+  end
+
   it "refuses to write an invalid generated uuid" do
     strip_uuid(Account.create!(name: "Legacy"))
     allow(Account).to receive(:polyid_generate_uuid).and_return("nope")
