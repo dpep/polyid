@@ -161,6 +161,10 @@ RSpec.describe "relation lookups" do
         expect(Gadget.joins(:maker).where("users.id" => maker.uuid)).to eq([gadget])
       end
 
+      it "translates a foreign key shared with an association that doesn't load" do
+        expect(Gadget.where(thing_id: maker.uuid)).to eq([gadget])
+      end
+
       it "leaves a table it can't place alone" do
         expect(Gadget.where("others.id" => maker.uuid).to_sql).to include("others")
       end

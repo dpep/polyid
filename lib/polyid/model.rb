@@ -227,13 +227,20 @@ module PolyId
 
       # the belongs_to target of an association name or foreign key
       def polyid_referenced_model(key)
-        reflection = reflect_on_association(key) ||
-          reflect_on_all_associations(:belongs_to).find { |assoc| assoc.foreign_key.to_s == key.to_s }
-        return unless reflection&.belongs_to? && !reflection.polymorphic?
-        # eg. primary_key: :uuid, where the foreign key already holds uuids
-        return unless reflection.association_primary_key.to_s == reflection.klass.primary_key
+        reflections = Array(reflect_on_association(key)).presence ||
+          reflect_on_all_associations(:belongs_to).select { |assoc| assoc.foreign_key.to_s == key.to_s }
 
-        reflection.klass
+        reflections.each do |reflection|
+          next unless reflection.belongs_to? && !reflection.polymorphic?
+          # eg. primary_key: :uuid, where the foreign key already holds uuids
+          next unless reflection.association_primary_key.to_s == reflection.klass.primary_key
+
+          return reflection.klass
+        rescue NameError
+          # a class_name that doesn't load has nothing to translate
+        end
+
+        nil
       end
 
       def polyid_required!
