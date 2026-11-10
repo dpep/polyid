@@ -64,6 +64,9 @@
 - `polyid_uuid_attribute_raw` and `polyid_uuid_generator` are no longer
   defined on every model instance, and their class writers are private.
   declare `polyid` instead of assigning them
+- a uuid on a write path polyid doesn't translate, eg. `create!(account_id:
+  uuid)`, `create_with`, or `update_all`, raises PolyId::UntranslatedUuidError
+  instead of being integer-cast into an unrelated id.  pass ids there
 - an unsupported uuid generator raises when it's configured, by
   `PolyId.uuid_generator=` or `polyid uuid_generator:`, not on the first save
 

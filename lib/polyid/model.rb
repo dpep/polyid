@@ -299,7 +299,16 @@ module PolyId
         return if @polyid_types_registered
         @polyid_types_registered = true
 
+        polyid_register_integer_guard
         polyid_register_uuid_type
+      end
+
+      # every integer column, since which ones polyid translates is only known
+      # once the model and its associations resolve
+      def polyid_register_integer_guard
+        decorate_attributes do |name, type|
+          type.dup.extend(PolyId::IntegerGuard).polyid_guard(self, name) if type.type == :integer
+        end
       end
 
       def polyid_register_uuid_type
