@@ -1,3 +1,7 @@
-# ActiveRecord casts a string id with `to_i`, so a uuid starting with a digit
-# truncates to a small primary key and matches it.  use this to assert a miss.
-UNKNOWN_UUID = "deadbeef-0000-4000-8000-000000000000".freeze
+# ActiveRecord integer-casts a string id with `to_i`, so this becomes 123.  a
+# miss only proves the uuid was translated when a decoy row sits at that id
+UNRESOLVED_UUID = "123e4567-e89b-42d3-a456-426614174000".freeze
+
+RSpec.shared_context "with a decoy row" do
+  let!(:decoy) { create(:user, id: 123, account: create(:account, id: 123)) }
+end

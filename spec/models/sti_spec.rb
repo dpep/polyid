@@ -1,5 +1,5 @@
 RSpec.describe "single table inheritance" do
-  let(:dog) { Dog.create! }
+  let(:dog) { create(:dog) }
 
   before { PolyId.cache = ActiveSupport::Cache::MemoryStore.new }
 
