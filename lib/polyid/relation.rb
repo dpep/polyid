@@ -30,8 +30,13 @@ module PolyId
     def polyid_translate_attributes(attributes)
       return attributes unless attributes.is_a?(Hash)
 
-      klass.polyid_translate_conditions(attributes).to_h do |key, value|
-        [value.equal?(attributes[key]) ? key : polyid_foreign_key(key), value]
+      translated = klass.polyid_translate_conditions(attributes)
+      # "match nothing" can't be written to a column, and would store a NULL
+      key, value = attributes.find { |name, given| translated[name] == [] && given != [] }
+      raise ActiveRecord::RecordNotFound.new("Couldn't find #{key}=#{value}", klass.name, key, value) if key
+
+      translated.to_h do |name, given|
+        [given.equal?(attributes[name]) ? name : polyid_foreign_key(name), given]
       end
     end
 
