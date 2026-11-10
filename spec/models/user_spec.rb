@@ -58,6 +58,21 @@ RSpec.describe User do
     end
   end
 
+  describe "partial selects" do
+    let(:user) { create(:user, name: "a") }
+
+    it "saves without the uuid loaded" do
+      User.select(:id, :name).find(user.id).update!(name: "b")
+
+      expect(user.reload.name).to eq("b")
+    end
+
+    it "destroys without the uuid loaded" do
+      expect(User.select(:id).find(user.id).destroy).to be_destroyed
+      expect(User.exists?(user.id)).to be false
+    end
+  end
+
   describe ".find" do
     subject(:found_user) { User.find(lookup) }
 
