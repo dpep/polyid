@@ -84,6 +84,17 @@ User.uuids_for([user.id, user.uuid])    # => ["8f47...", "8f47..."]
 The plural forms preserve input order. A value already in the target form passes
 through unchecked, and one that doesn't resolve comes back `nil`.
 
+To check whether a model is polyid, and which column holds its UUIDs:
+
+```ruby
+User.polyid?                            # => true
+User.polyid_uuid_attribute              # => "uuid"
+```
+
+The public API is what this README documents. Other `polyid_*` methods,
+`PolyId::Cache`, and `PolyId::BinaryUuidType` are internal and may change in any
+release.
+
 ## UUID columns
 
 ### Binary storage

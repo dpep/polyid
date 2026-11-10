@@ -7,7 +7,7 @@ module PolyId
     NO_MATCH = [].freeze
 
     # drops resolved config so global settings apply again -- supports PolyId.reset
-    def self.reset_all!
+    def self.reset_all! # :nodoc:
       return unless defined?(ActiveRecord::Base)
 
       ActiveRecord::Base.descendants.each do |model|
@@ -116,7 +116,7 @@ module PolyId
       end
 
       # nested conditions are translated even when this model isn't polyid
-      def polyid_translate_conditions(conditions)
+      def polyid_translate_conditions(conditions) # :nodoc:
         translated = nil
 
         conditions.each do |key, values|
@@ -131,7 +131,7 @@ module PolyId
       end
 
       # STI subclasses share a table, so they share cached mappings
-      def polyid_cache_name
+      def polyid_cache_name # :nodoc:
         base_class.name
       end
 
@@ -149,12 +149,12 @@ module PolyId
         nil
       end
 
-      def polyid_generate_uuid
+      def polyid_generate_uuid # :nodoc:
         PolyId.generate_uuid(polyid_uuid_generator || PolyId.uuid_generator)
       end
 
       # an unresolved uuid would reach ActiveRecord as nil, hiding it from the error
-      def polyid_translate_find_args(args)
+      def polyid_translate_find_args(args) # :nodoc:
         wrapped = args.length == 1 && args.first.is_a?(Array)
         # ActiveRecord flattens too, eg. find(1, [2, 3])
         values = args.flatten
@@ -172,14 +172,14 @@ module PolyId
 
       # rows read in a transaction may never commit.  a non-joinable transaction,
       # eg. transactional tests, commits each nested one's callbacks itself
-      def polyid_after_commit(&)
+      def polyid_after_commit(&) # :nodoc:
         transaction = with_connection(&:current_transaction)
         transaction.joinable? ? transaction.after_commit(&) : yield
       end
 
       # an unresolved uuid must match nothing, not fall through to an integer cast
       # or become a NULL that matches rows with no foreign key
-      def polyid_translate_ids(values)
+      def polyid_translate_ids(values) # :nodoc:
         if polyid_collection?(values)
           return values if values.none? { |value| PolyId.normalize_uuid(value) }
 
@@ -193,7 +193,7 @@ module PolyId
 
       # the model whose ids a column holds: this one for its primary key, or a
       # belongs_to target for a foreign key or association name
-      def polyid_key_target(key)
+      def polyid_key_target(key) # :nodoc:
         # "users.id"
         table, column = key.to_s.split(".", 2)
         return (table == table_name ? self : polyid_associated_model(table))&.polyid_key_target(column) if column

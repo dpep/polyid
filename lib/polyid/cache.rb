@@ -1,5 +1,5 @@
 module PolyId
-  module Cache
+  module Cache # :nodoc:
     IMMEDIATELY = ->(&write) { write.call }
 
     class << self

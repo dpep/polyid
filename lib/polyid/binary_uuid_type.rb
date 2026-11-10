@@ -1,5 +1,5 @@
 module PolyId
-  class BinaryUuidType < ActiveModel::Type::Binary
+  class BinaryUuidType < ActiveModel::Type::Binary # :nodoc:
     def initialize(subtype = nil)
       super()
       @subtype = subtype

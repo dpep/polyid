@@ -62,7 +62,7 @@ module PolyId
       instance_variable_defined?(:@cache_ttl) ? @cache_ttl : DEFAULT_CACHE_TTL
     end
 
-    def reset
+    def reset # :nodoc:
       # drop the store rather than clear it: it may be shared, eg. Rails.cache
       CONFIG_IVARS.each do |ivar|
         remove_instance_variable(ivar) if instance_variable_defined?(ivar)
@@ -75,7 +75,7 @@ module PolyId
       @uuid_generator ||= :v7
     end
 
-    def generate_uuid(generator = nil)
+    def generate_uuid(generator = nil) # :nodoc:
       generator ||= uuid_generator
       validate_uuid_generator!(generator)
 
@@ -87,7 +87,7 @@ module PolyId
     end
 
     # a Proc can only be checked when it's called
-    def validate_uuid_generator!(generator)
+    def validate_uuid_generator!(generator) # :nodoc:
       return if generator.nil? || generator.is_a?(Proc)
       return if V7_GENERATORS.include?(generator) || V4_GENERATORS.include?(generator)
 
