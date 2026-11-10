@@ -275,12 +275,11 @@ module PolyId
       end
     end
 
-    # a copy is a new row, so it needs its own uuid
+    # a copy is a new row, so it needs its own uuid.  reset as dup resets the
+    # primary key; not via init_attributes, which activerecord 7.2 lacks
     def initialize_dup(other)
       super
-
-      uuid_attribute = self.class.polyid_uuid_attribute
-      self[uuid_attribute] = nil if self.class.polyid? && has_attribute?(uuid_attribute)
+      @attributes.reset(self.class.polyid_uuid_attribute) if self.class.polyid?
     end
 
     private
