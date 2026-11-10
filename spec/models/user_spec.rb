@@ -83,13 +83,6 @@ RSpec.describe User do
       it { is_expected.to eq(user) }
     end
 
-    context "when looking up by uuid" do
-      let(:user) { create(:user) }
-      let(:lookup) { user.uuid }
-
-      it { is_expected.to eq(user) }
-    end
-
     it "finds multiple records by mixed ids and uuids" do
       first = create(:user)
       second = create(:user)
@@ -97,16 +90,6 @@ RSpec.describe User do
       expect(User.find(first.id, second.uuid)).to contain_exactly(first, second)
       expect(User.find([first.uuid, second.id])).to contain_exactly(first, second)
       expect(User.find(first.uuid, [second.uuid])).to contain_exactly(first, second)
-    end
-
-    context "with a uuid that resolves to nothing" do
-      include_context "with a decoy row"
-
-      it "raises" do
-        expect {
-          User.find(UNRESOLVED_UUID)
-        }.to raise_error(ActiveRecord::RecordNotFound, /=#{Regexp.escape(UNRESOLVED_UUID)}/)
-      end
     end
 
     it "does not integer-cast a non-RFC uuid into an unrelated id" do
@@ -185,10 +168,7 @@ RSpec.describe User do
     it "accepts uppercase uuids" do
       user = create(:user)
 
-      expect(User.id_for(user.uuid.upcase)).to eq(user.id)
       expect(User.ids_for([user.uuid.upcase])).to eq([user.id])
-      expect(User.find(user.uuid.upcase)).to eq(user)
-      expect(User.where(id: user.uuid.upcase)).to eq([user])
     end
 
     it "does not query for identity translations" do

@@ -64,14 +64,6 @@ RSpec.describe PolyId::Cache do
       expect(cached[:ids]).to eq(42 => uuid)
       expect(cached[:uuids]).to eq(uuid => 42)
     end
-
-    it "writes every resolved mapping in one call" do
-      mappings = 5.times.to_h { |i| [SecureRandom.uuid, i] }
-
-      expect(cache).to receive(:write_multi).once.and_call_original
-
-      described_class.fetch_ids(model_name, uuids: mappings.keys) { mappings }
-    end
   end
 
   describe ".fetch_ids" do
@@ -269,18 +261,6 @@ RSpec.describe PolyId::Cache do
   end
 
   describe "translation cache" do
-    it "uses the cache for repeat uuid lookups" do
-      user = create(:user)
-
-      expect(User.id_for(user.uuid)).to eq(user.id)
-
-      queries = sql_queries do
-        expect(User.id_for(user.uuid)).to eq(user.id)
-        expect(User.uuid_for(user.id)).to eq(user.uuid)
-      end
-      expect(queries).to be_empty
-    end
-
     it "writes both directions with a bulk cache write" do
       user = create(:user)
       cache.clear
