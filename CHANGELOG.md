@@ -61,6 +61,9 @@
   while it runs
 - backfill rejects a batch size that isn't a positive integer, rather than
   silently filling nothing
+- `polyid_uuid_attribute_raw` and `polyid_uuid_generator` are no longer
+  defined on every model instance, and their class writers are private.
+  declare `polyid` instead of assigning them
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade

@@ -16,8 +16,9 @@ module PolyId
     end
 
     included do
-      class_attribute :polyid_uuid_attribute_raw, instance_writer: false
-      class_attribute :polyid_uuid_generator, instance_writer: false
+      class_attribute :polyid_uuid_attribute_raw, :polyid_uuid_generator, instance_accessor: false, instance_predicate: false
+      # written only by the `polyid` macro, which refuses once config is resolved
+      private_class_method :polyid_uuid_attribute_raw=, :polyid_uuid_generator=
 
       before_validation :polyid_assign_uuid, on: :create
       before_validation :polyid_canonicalise_uuid
