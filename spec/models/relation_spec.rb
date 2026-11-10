@@ -145,6 +145,27 @@ RSpec.describe "relation lookups" do
       expect(Member.where(org: org.uuid)).to eq([member])
     end
 
+    context "when the association is named differently from its table" do
+      let!(:decoy) { create(:user, id: 123) }
+      # integer-casts to 123, so an untranslated value would match the decoy
+      let!(:maker) { create(:user, id: 777, uuid: "123e4567-e89b-42d3-a456-426614174000") }
+      let!(:gadget) { Gadget.create!(thing_id: maker.id) }
+
+      before { Gadget.create!(thing_id: decoy.id) }
+
+      it "translates a nested condition" do
+        expect(Gadget.joins(:maker).where(users: { id: maker.uuid })).to eq([gadget])
+      end
+
+      it "translates a table-qualified key" do
+        expect(Gadget.joins(:maker).where("users.id" => maker.uuid)).to eq([gadget])
+      end
+
+      it "leaves a table it can't place alone" do
+        expect(Gadget.where("others.id" => maker.uuid).to_sql).to include("others")
+      end
+    end
+
     it "does not resolve associations for values that aren't uuids" do
       expect(Gadget.where(thing_id: 3)).to be_empty
     end

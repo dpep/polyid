@@ -245,9 +245,22 @@ module PolyId
       def polyid_associated_model(key)
         reflection = reflect_on_association(key) || reflect_on_association(key.to_s.singularize)
         return self if reflection.nil? && key.to_s == table_name
-        return if reflection.nil? || reflection.polymorphic?
+        return polyid_model_for_table(key) if reflection.nil?
+        return if reflection.polymorphic?
 
         reflection.klass
+      end
+
+      # a join is keyed by table, which differs from the association name
+      # given a class_name, eg. belongs_to :author, class_name: "User"
+      def polyid_model_for_table(table)
+        reflect_on_all_associations.reject(&:polymorphic?).each do |reflection|
+          return reflection.klass if reflection.klass.table_name == table.to_s
+        rescue NameError
+          # a class_name that doesn't load has nothing to translate
+        end
+
+        nil
       end
 
       def polyid_auto_detection?
