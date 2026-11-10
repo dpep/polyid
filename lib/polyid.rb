@@ -98,7 +98,7 @@ module PolyId
     end
 
     def uuid?(value)
-      return false unless value.is_a?(String) && UUID_PATTERN.match?(value)
+      return false unless value.is_a?(String) && value.valid_encoding? && UUID_PATTERN.match?(value)
 
       version = value.getbyte(14).chr.to_i(16)
       variant = value.getbyte(19).chr.to_i(16)

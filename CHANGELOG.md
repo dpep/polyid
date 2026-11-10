@@ -11,6 +11,7 @@
 - uuids are write-once, so legacy rows can be backfilled
 - `save(validate: false)` and custom validation contexts still generate a uuid
 - remove PolyId.cache_binary_uuids
+- `dup` clears the uuid, so the copy gets its own
 - add PolyId.cache_ttl, defaulting to 30 days.  set to nil to never expire
 - translation is a real read-through cache, resolving misses in one bulk write
 - loading records no longer writes to the cache.  lookups populate it instead,
@@ -31,7 +32,10 @@
   integer id lookup
 - `uuid_for` casts string ids, so `uuid_for(params[:id])` works on a cold cache
 - uuid lookups ignore default scopes; the outer query still applies them
+- strings with invalid bytes no longer raise from `where`
 - `PolyId.reset` no longer clears the configured cache store
+- saving or destroying a record loaded with a partial select no longer raises
+  MissingAttributeError
 - a binary `uuid` primary key is left alone rather than cast as a polyid uuid
 - uuids are translated in table-qualified keys (`"users.id"`), foreign keys
   (`account_id:`), belongs_to associations (`account:`), and sets, and
@@ -44,7 +48,8 @@
   integer-casting them into unrelated ids
 - a foreign key onto the uuid itself (`belongs_to primary_key: :uuid`) is left
   untranslated
-- uuids in permitted params passed to `where` or `find_by` are translated
+- uuids in permitted params passed to `where`, `find_by`, or the
+  `find_or_create_by` family are translated
 - `find_or_create_by`, `create_or_find_by`, and `find_or_initialize_by` create
   with translated uuids, not just find with them.  a uuid that doesn't resolve
   raises RecordNotFound
@@ -52,6 +57,8 @@
   model until restart
 - backfill rejects invalid generated uuids and never overwrites one assigned
   while it runs
+- backfill rejects a batch size that isn't a positive integer, rather than
+  silently filling nothing
 
 ###  0.2.0  (2026-04-26)
 - casting upgrade

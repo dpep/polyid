@@ -28,6 +28,7 @@ module PolyId
     private
 
     def polyid_translate_attributes(attributes)
+      attributes = sanitize_forbidden_attributes(attributes)
       return attributes unless attributes.is_a?(Hash)
 
       translated = klass.polyid_translate_conditions(attributes)
