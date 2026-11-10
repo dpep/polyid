@@ -39,6 +39,20 @@ RSpec.describe PolyId do
     end
   end
 
+  describe ".uuid_generator=" do
+    { :v7 => "7", 7 => "7", "v7" => "7", "7" => "7", :v4 => "4", 4 => "4", "v4" => "4", "4" => "4" }.each do |generator, version|
+      it "accepts #{generator.inspect} for v#{version}" do
+        described_class.uuid_generator = generator
+
+        expect(described_class.generate_uuid[14]).to eq(version)
+      end
+    end
+
+    it "rejects an unknown generator when set, not when first used" do
+      expect { described_class.uuid_generator = :v9 }.to raise_error(ArgumentError, /unsupported/)
+    end
+  end
+
   describe ".normalize_uuid" do
     uuid = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
     non_rfc = "8f47a7ca-8f4a-0d7b-96e6-60a0b47ddf68"
