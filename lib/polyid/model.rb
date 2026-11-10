@@ -69,7 +69,7 @@ module PolyId
       def ids_for(values)
         polyid_required!
         values = Array(values)
-        uuids = values.filter_map { |value| polyid_normalize_uuid(value) }
+        uuids = values.filter_map { |value| PolyId.normalize_uuid(value) }
 
         # unscoped: the mapping is global, and the caller's query still applies its scope
         resolved_uuids = PolyId::Cache.fetch_ids(polyid_cache_name, uuids:, defer: method(:polyid_after_commit)) do |missing_uuids|
@@ -78,7 +78,7 @@ module PolyId
         end
 
         values.map do |value|
-          uuid = polyid_normalize_uuid(value)
+          uuid = PolyId.normalize_uuid(value)
           uuid ? resolved_uuids[uuid] : value
         end
       end
@@ -91,8 +91,8 @@ module PolyId
         polyid_required!
         # cast so "1" matches the integer key that pluck returns
         pk_type = type_for_attribute(primary_key)
-        values = Array(values).map { |value| polyid_normalize_uuid(value) || pk_type.cast(value) }
-        ids = values.reject { |value| polyid_uuid_like?(value) || value.blank? }
+        values = Array(values).map { |value| PolyId.normalize_uuid(value) || pk_type.cast(value) }
+        ids = values.reject { |value| PolyId.normalize_uuid(value) || value.blank? }
 
         resolved_ids = PolyId::Cache.fetch_uuids(polyid_cache_name, ids:, defer: method(:polyid_after_commit)) do |missing_ids|
           # a row with no uuid yet (or a junk one) has nothing worth caching
@@ -102,7 +102,7 @@ module PolyId
         end
 
         values.map do |value|
-          polyid_uuid_like?(value) ? value : resolved_ids[value]
+          PolyId.normalize_uuid(value) ? value : resolved_ids[value]
         end
       end
 
@@ -158,7 +158,7 @@ module PolyId
         values = args.flatten
         ids = ids_for(values)
 
-        missing = values.zip(ids).find { |value, id| id.nil? && polyid_uuid_like?(value) }&.first
+        missing = values.zip(ids).find { |value, id| id.nil? && PolyId.normalize_uuid(value) }&.first
         if missing
           raise ActiveRecord::RecordNotFound.new(
             "Couldn't find #{name} with '#{primary_key}'=#{missing}", name, primary_key, missing,
@@ -178,41 +178,29 @@ module PolyId
       # an unresolved uuid must match nothing, not fall through to an integer cast
       # or become a NULL that matches rows with no foreign key
       def polyid_translate_ids(values)
-        if values.is_a?(Array) || values.is_a?(Set)
-          return values if values.none? { |value| polyid_uuid_like?(value) }
+        if polyid_collection?(values)
+          return values if values.none? { |value| PolyId.normalize_uuid(value) }
 
           values = values.to_a
-          return values.zip(ids_for(values)).reject { |value, id| id.nil? && polyid_uuid_like?(value) }.map(&:last)
+          return values.zip(ids_for(values)).reject { |value, id| id.nil? && PolyId.normalize_uuid(value) }.map(&:last)
         end
 
-        polyid_uuid_like?(values) ? id_for(values) || [] : values
+        PolyId.normalize_uuid(values) ? id_for(values) || [] : values
       end
 
       private
 
-      # judged by shape, not RFC validity: a non-RFC uuid passed through as an id
-      # would be integer-cast ("8f47..." => 8) and match an unrelated row
-      def polyid_uuid_like?(value)
-        # strip raises on invalid bytes, eg. from an import
-        value.is_a?(String) && value.valid_encoding? && PolyId::UUID_PATTERN.match?(value.strip)
-      end
-
-      # uuids are case insensitive; canonicalise so lookups match what is stored
-      def polyid_normalize_uuid(value)
-        value.strip.downcase if polyid_uuid_like?(value)
-      end
-
-      def polyid_uuid_input?(values)
-        return values.any? { |value| polyid_uuid_like?(value) } if values.is_a?(Array) || values.is_a?(Set)
-
-        polyid_uuid_like?(values)
+      # an IN list, rather than a scalar
+      def polyid_collection?(values)
+        values.is_a?(Array) || values.is_a?(Set)
       end
 
       def polyid_translate_condition(key, values)
         return polyid_associated_model(key)&.polyid_translate_conditions(values) if values.is_a?(Hash)
-        # tuple keys, eg. [:id, :name] => [[1, "a"]], as in_batches builds.  checking
-        # the value first spares resolving association classes for every key
-        return if key.is_a?(Array) || !polyid_uuid_input?(values)
+        # tuple keys, eg. [:id, :name] => [[1, "a"]], as in_batches builds
+        return if key.is_a?(Array)
+        # checking the value first spares resolving association classes for every key
+        return unless (polyid_collection?(values) ? values : [values]).any? { |value| PolyId.normalize_uuid(value) }
 
         # "users.id" => uuid
         table, column = key.to_s.split(".", 2)
@@ -223,9 +211,9 @@ module PolyId
 
         # stored lowercase, so query lowercase
         if polyid? && key.to_s == polyid_uuid_attribute
-          return values.map { |value| polyid_normalize_uuid(value) || value } if values.is_a?(Array) || values.is_a?(Set)
+          return values.map { |value| PolyId.normalize_uuid(value) || value } if polyid_collection?(values)
 
-          return polyid_normalize_uuid(values)
+          return PolyId.normalize_uuid(values)
         end
 
         model = key.to_s == primary_key ? self : polyid_referenced_model(key)
