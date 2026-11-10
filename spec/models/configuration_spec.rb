@@ -27,6 +27,32 @@ RSpec.describe "configuration" do
     end
   end
 
+  describe "once a model has loaded its schema" do
+    before do
+      model = stub_const("FreshAccount", Class.new(ActiveRecord::Base) { self.table_name = "accounts" })
+      model.type_for_attribute("uuid")
+    end
+
+    it "refuses settings that are baked into models" do
+      expect { PolyId.default_uuid_attribute = :public_id }.to raise_error(PolyId::ConfigurationError)
+    end
+  end
+
+  describe "once a model has declared polyid" do
+    before { stub_const("DeclaredUser", Class.new(ActiveRecord::Base) { self.table_name = "users"; polyid }) }
+
+    it "refuses settings that are baked into models" do
+      expect { PolyId.default_uuid_attribute = :public_id }.to raise_error(PolyId::ConfigurationError)
+    end
+  end
+
+  it "opts a model in under the default uuid attribute when auto-detection is off" do
+    PolyId.auto_detect = false
+    model = stub_const("OptedInUser", Class.new(ActiveRecord::Base) { self.table_name = "users"; polyid })
+
+    expect(model.polyid_uuid_attribute).to eq("uuid")
+  end
+
   describe ".reset" do
     it "makes configuration settable again" do
       User.polyid?

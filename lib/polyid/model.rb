@@ -32,13 +32,13 @@ module PolyId
     end
 
     class_methods do
-      def polyid(uuid_attribute: PolyId.default_uuid_attribute, uuid_generator: nil)
+      def polyid(uuid_attribute: nil, uuid_generator: nil)
         if defined?(@polyid_uuid_attribute)
           raise PolyId::ConfigurationError,
             "#{name} has already resolved its polyid config; declare `polyid` in the class body"
         end
 
-        self.polyid_uuid_attribute_raw = uuid_attribute.to_s
+        self.polyid_uuid_attribute_raw = (uuid_attribute || polyid_setting(:default_uuid_attribute)).to_s
         self.polyid_uuid_generator = uuid_generator
       end
 
@@ -134,13 +134,11 @@ module PolyId
       def polyid_uuid_attribute
         return @polyid_uuid_attribute if defined?(@polyid_uuid_attribute)
 
-        PolyId.config_resolved!
-
         @polyid_uuid_attribute =
           if polyid_uuid_attribute_raw.present?
             polyid_uuid_attribute_raw
           elsif polyid_auto_detection?
-            PolyId.default_uuid_attribute.to_s
+            polyid_setting(:default_uuid_attribute).to_s
           end
       rescue ActiveRecord::NoDatabaseError, ActiveRecord::StatementInvalid
         # unmemoised, so a database blip doesn't disable polyid for good
@@ -265,12 +263,19 @@ module PolyId
         nil
       end
 
+      # a setting baked into models locks once read, so a late change raises
+      # rather than going unseen
+      def polyid_setting(name)
+        PolyId.config_resolved!
+        PolyId.public_send(name)
+      end
+
       def polyid_auto_detection?
-        return false unless PolyId.auto_detect?
+        return false unless polyid_setting(:auto_detect?)
         return false if abstract_class?
         return false unless respond_to?(:table_exists?) && table_exists?
 
-        uuid_attribute = PolyId.default_uuid_attribute.to_s
+        uuid_attribute = polyid_setting(:default_uuid_attribute).to_s
         primary_key.present? && primary_key != uuid_attribute && column_names.include?(uuid_attribute)
       end
 
@@ -280,7 +285,7 @@ module PolyId
         @polyid_uuid_type_registered = true
 
         uuid_attribute = polyid_uuid_attribute_raw.presence ||
-          (PolyId.default_uuid_attribute.to_s if PolyId.auto_detect?)
+          (polyid_setting(:default_uuid_attribute).to_s if polyid_setting(:auto_detect?))
         return unless uuid_attribute
         # auto-detection skips a uuid primary key, so its bytes aren't polyid's to judge
         return if polyid_uuid_attribute_raw.blank? && primary_key == uuid_attribute
