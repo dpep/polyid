@@ -193,7 +193,8 @@ module PolyId
       # judged by shape, not RFC validity: a non-RFC uuid passed through as an id
       # would be integer-cast ("8f47..." => 8) and match an unrelated row
       def polyid_uuid_like?(value)
-        value.is_a?(String) && PolyId::UUID_PATTERN.match?(value.strip)
+        # strip raises on invalid bytes, eg. from an import
+        value.is_a?(String) && value.valid_encoding? && PolyId::UUID_PATTERN.match?(value.strip)
       end
 
       # uuids are case insensitive; canonicalise so lookups match what is stored

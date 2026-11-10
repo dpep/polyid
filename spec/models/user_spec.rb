@@ -170,5 +170,10 @@ RSpec.describe User do
       expect(User.where(uuid: user.uuid)).to eq([user])
       expect(User.where(uuid: [user.uuid])).to eq([user])
     end
+
+    it "does not raise on invalid bytes" do
+      expect(User.where(name: "\xFF abc")).to be_empty
+      expect(PolyId.uuid?("\xFF")).to be false
+    end
   end
 end

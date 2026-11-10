@@ -31,6 +31,7 @@
   integer id lookup
 - `uuid_for` casts string ids, so `uuid_for(params[:id])` works on a cold cache
 - uuid lookups ignore default scopes; the outer query still applies them
+- strings with invalid bytes no longer raise from `where`
 - `PolyId.reset` no longer clears the configured cache store
 - a binary `uuid` primary key is left alone rather than cast as a polyid uuid
 - uuids are translated in table-qualified keys (`"users.id"`), foreign keys
