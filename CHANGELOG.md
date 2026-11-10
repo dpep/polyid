@@ -1,4 +1,4 @@
-###  Unreleased
+###  0.3.0  (2026-11-09)
 
 #### Upgrading from 0.2.0
 - requires activerecord >= 7.2, now a runtime dependency
