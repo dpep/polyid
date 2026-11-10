@@ -33,7 +33,7 @@ module PolyId
 
       translated = klass.polyid_translate_conditions(attributes)
       # "match nothing" can't be written to a column, and would store a NULL
-      key, value = attributes.find { |name, given| translated[name] == [] && given != [] }
+      key, value = attributes.find { |name, _given| translated[name].equal?(PolyId::Model::NO_MATCH) }
       raise ActiveRecord::RecordNotFound.new("Couldn't find #{key}=#{value}", klass.name, key, value) if key
 
       translated.to_h do |name, given|

@@ -3,6 +3,8 @@ module PolyId
     extend ActiveSupport::Concern
 
     MEMOISED = %i[@polyid_uuid_attribute @polyid_uuid_type_registered].freeze
+    # what an unresolved uuid translates to: a query matches nothing, a write refuses
+    NO_MATCH = [].freeze
 
     # drops resolved config so global settings apply again -- supports PolyId.reset
     def self.reset_all!
@@ -181,10 +183,11 @@ module PolyId
           return values if values.none? { |value| PolyId.normalize_uuid(value) }
 
           values = values.to_a
-          return values.zip(ids_for(values)).reject { |value, id| id.nil? && PolyId.normalize_uuid(value) }.map(&:last)
+          ids = values.zip(ids_for(values)).reject { |value, id| id.nil? && PolyId.normalize_uuid(value) }.map(&:last)
+          return ids.presence || NO_MATCH
         end
 
-        PolyId.normalize_uuid(values) ? id_for(values) || [] : values
+        PolyId.normalize_uuid(values) ? id_for(values) || NO_MATCH : values
       end
 
       private
