@@ -59,7 +59,7 @@ RSpec.describe Account do
 
       it "does not match rows still awaiting a uuid" do
         described_class.connection.execute(
-          "INSERT INTO accounts (name, uuid) VALUES ('legacy', NULL)"
+          "INSERT INTO accounts (name, uuid) VALUES ('legacy', NULL)",
         )
 
         expect(described_class.find_by(uuid: "not-a-uuid")).to be_nil

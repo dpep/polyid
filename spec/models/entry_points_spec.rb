@@ -29,10 +29,10 @@ RSpec.describe "uuid entry points" do
     "a table-qualified key" => [:user, ->(uuid) { User.where("users.id" => uuid).first }],
     "a foreign key" => [:account, ->(uuid) { User.where(account_id: uuid).first&.account }],
     "an association name" => [:account, ->(uuid) { User.where(account: uuid).first&.account }],
-    "find_or_create_by! on a foreign key" => [:account, ->(uuid) { User.find_or_create_by!(account_id: uuid).account }],
-    "find_or_initialize_by on an association" => [:account, ->(uuid) { User.find_or_initialize_by(account: uuid).account }],
-    "a joined table's nested condition" => [:account, ->(uuid) { User.joins(:account).where(accounts: { id: uuid }).first&.account }],
-    "a joined table's qualified key" => [:account, ->(uuid) { User.joins(:account).where("accounts.id" => uuid).first&.account }],
+    "find_or_create_by!(account_id:)" => [:account, ->(uuid) { User.find_or_create_by!(account_id: uuid).account }],
+    "find_or_initialize_by(account:)" => [:account, ->(uuid) { User.find_or_initialize_by(account: uuid).account }],
+    "a nested join condition" => [:account, ->(uuid) { User.joins(:account).find_by(accounts: { id: uuid })&.account }],
+    "a qualified join key" => [:account, ->(uuid) { User.joins(:account).find_by("accounts.id" => uuid)&.account }],
   }.each do |entry_point, (target, lookup)|
     describe entry_point do
       let(:record) { public_send(target) }

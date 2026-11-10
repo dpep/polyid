@@ -17,7 +17,7 @@ module PolyId
 
     def serialize(value)
       return if value.nil?
-      return super(value) if binary_uuid_bytes?(value)
+      return super if binary_uuid_bytes?(value)
 
       uuid = valid_uuid(value)
       super(pack_uuid(uuid)) if uuid

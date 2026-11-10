@@ -40,7 +40,9 @@ RSpec.describe PolyId do
   end
 
   describe ".uuid_generator=" do
-    { :v7 => "7", 7 => "7", "v7" => "7", "7" => "7", :v4 => "4", 4 => "4", "v4" => "4", "4" => "4" }.each do |generator, version|
+    versions = { :v7 => "7", 7 => "7", "v7" => "7", "7" => "7", :v4 => "4", 4 => "4", "v4" => "4", "4" => "4" }
+
+    versions.each do |generator, version|
       it "accepts #{generator.inspect} for v#{version}" do
         described_class.uuid_generator = generator
 

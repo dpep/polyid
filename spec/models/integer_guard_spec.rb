@@ -3,7 +3,9 @@ RSpec.describe "a uuid that escapes translation" do
 
   describe "on a path polyid doesn't translate" do
     it "raises on create" do
-      expect { User.create!(account_id: account.uuid) }.to raise_error(PolyId::UntranslatedUuidError, /users\.account_id/)
+      expect {
+        User.create!(account_id: account.uuid)
+      }.to raise_error(PolyId::UntranslatedUuidError, /users\.account_id/)
     end
 
     it "raises on create_with" do
